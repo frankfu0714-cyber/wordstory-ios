@@ -79,7 +79,10 @@ struct APIService {
     }
 
     struct GenerateResponse: Decodable {
-        let story: String
+        /// English version of the generated piece.
+        let story_en: String
+        /// Traditional Chinese version of the same piece.
+        let story_zh: String
     }
 
     /// Calls `/api/generate` with a list of words and a style.

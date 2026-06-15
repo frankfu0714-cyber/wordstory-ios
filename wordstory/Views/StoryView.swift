@@ -46,12 +46,26 @@ struct StoryView: View {
     @State private var style: StoryStyle = .shortStory
     @State private var customPrompt = ""
 
-    @State private var generatedText: String?
+    @State private var generated: APIService.GenerateResponse?
     @State private var generatedFor: [Word] = []
     @State private var isGenerating = false
     @State private var errorMessage: String?
 
     @State private var tappedWord: Word?
+    /// Which of the two language versions of the story is currently visible.
+    /// Defaults to the target language (the one with the vocab) on generation.
+    @State private var displayLang: StoryLang = .en
+
+    enum StoryLang: String, CaseIterable, Identifiable {
+        case en, zh
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .en: return "EN"
+            case .zh: return "中"
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -66,12 +80,15 @@ struct StoryView: View {
                     if let errorMessage {
                         errorBanner(message: errorMessage)
                     }
-                    if let text = generatedText {
-                        storyOutput(text: text)
+                    if let generated {
+                        storyOutput(generated: generated)
                     }
                 }
                 .padding(.horizontal, 18)
-                .padding(.vertical, 12)
+                .padding(.top, 12)
+                // Generous bottom padding so the Regenerate button can scroll
+                // clear of the translucent tab bar even on shorter devices.
+                .padding(.bottom, 100)
             }
             .background(Theme.background)
             .scrollDismissesKeyboard(.interactively)
@@ -273,13 +290,37 @@ struct StoryView: View {
 
     // MARK: - Story output
 
-    private func storyOutput(text: String) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(makeAttributedStory(text: text, words: generatedFor))
-                .font(Theme.serif(18))
-                .lineSpacing(8)
-                .foregroundStyle(Theme.ink)
-                .textSelection(.enabled)
+    private func storyOutput(generated: APIService.GenerateResponse) -> some View {
+        let activeText = displayLang == .en ? generated.story_en : generated.story_zh
+        return VStack(alignment: .leading, spacing: 14) {
+            // EN / 中 toggle. The vocabulary words are highlighted only in the
+            // English version — the Chinese rendering is a plain reading
+            // reference (the simplified shipping path; CJK word-boundary
+            // matching for highlights would need its own pass).
+            HStack {
+                Picker("language", selection: $displayLang) {
+                    ForEach(StoryLang.allCases) { lang in
+                        Text(lang.label).tag(lang)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 140)
+                Spacer()
+            }
+
+            if displayLang == .en {
+                Text(makeAttributedStory(text: activeText, words: generatedFor))
+                    .font(Theme.serif(18))
+                    .lineSpacing(8)
+                    .foregroundStyle(Theme.ink)
+                    .textSelection(.enabled)
+            } else {
+                Text(activeText)
+                    .font(Theme.serif(18))
+                    .lineSpacing(8)
+                    .foregroundStyle(Theme.ink)
+                    .textSelection(.enabled)
+            }
 
             HStack {
                 Text("story.meta.count \(generatedFor.count)")
@@ -364,7 +405,7 @@ struct StoryView: View {
 
         isGenerating = true
         errorMessage = nil
-        generatedText = nil
+        generated = nil
 
         let texts = vocab.map(\.sourceText)
         let prompt = customPrompt
@@ -378,8 +419,12 @@ struct StoryView: View {
                 customPrompt: prompt,
                 direction: dir
             )
-            generatedText = response.story
+            generated = response
             generatedFor = vocab
+            // Default the visible language to the target side (the one with
+            // the vocab woven in). For en-to-zh that's English; for zh-to-en
+            // it's Chinese.
+            displayLang = (dir == .enToZh) ? .en : .zh
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription
                 ?? String(localized: "error.generic")

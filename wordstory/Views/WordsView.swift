@@ -488,7 +488,14 @@ private struct WordRow: View {
                 .opacity(revealed ? 1 : 0)
                 .zIndex(revealed ? 1 : 0)
         }
-        .rotation3DEffect(.degrees(revealed ? 180 : 0), axis: (x: 0, y: 1, z: 0))
+        // perspective: 0.5 introduces depth so the rotation reads as a real
+        // flip rather than a 2D opacity swap. Without it the card looks
+        // squashed against the plane of the screen.
+        .rotation3DEffect(
+            .degrees(revealed ? 180 : 0),
+            axis: (x: 0, y: 1, z: 0),
+            perspective: 0.5
+        )
         .animation(.spring(response: 0.55, dampingFraction: 0.75), value: revealed)
         .contentShape(Rectangle())
         // Subtle yellow flash when the user types a word that's already in

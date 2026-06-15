@@ -40,10 +40,29 @@ struct APIService {
         let word: String
         let definition: String
         let example: String
+
+        init(word: String, definition: String, example: String) {
+            self.word = word
+            self.definition = definition
+            self.example = example
+        }
     }
 
-    /// Calls `/api/define` for a single word in the given direction.
+    /// Defines a word with offline-first behavior:
+    /// 1. Try the bundled ECDICT dictionary (covers ~770k English headwords).
+    /// 2. On a local miss, fall through to the online `/api/define`.
+    /// Both paths return the same `DefineResponse` shape so callers don't care
+    /// which one succeeded.
     static func defineWord(_ word: String, direction: LanguageDirection) async throws -> DefineResponse {
+        if let hit = await DictionaryService.shared.lookup(word, direction: direction) {
+            print("[APIService] local hit: \(word)")
+            return DefineResponse(
+                word: hit.word,
+                definition: hit.translation,
+                example: ""
+            )
+        }
+        print("[APIService] local miss, online lookup: \(word)")
         struct Payload: Encodable { let word: String; let direction: String }
         let body = Payload(word: word, direction: direction.rawValue)
         return try await post(path: "/api/define", body: body)

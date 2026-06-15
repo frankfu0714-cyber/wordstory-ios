@@ -20,6 +20,8 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: wordstory
+      - path: Resources
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.frankfu.wordstory

@@ -148,7 +148,10 @@ struct APIService {
         do {
             return try JSONDecoder().decode(Response.self, from: data)
         } catch {
-            let bodySnippet = String(data: data, encoding: .utf8)?.prefix(200) ?? ""
+            // Longer body snippet for /api/generate failures so dual-language
+            // truncation issues are visible in the Xcode console.
+            let snippetLimit = path.contains("/api/generate") ? 500 : 200
+            let bodySnippet = String(data: data, encoding: .utf8)?.prefix(snippetLimit) ?? ""
             print("[APIService] POST \(path) decode failed: \(error). Body: \(bodySnippet)")
             throw APIError.decoding
         }

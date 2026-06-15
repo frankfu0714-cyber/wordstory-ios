@@ -537,6 +537,28 @@ private struct WordRow: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 18)
         .opacity(word.learned ? 0.6 : 1.0)
+        // Speaker button overlay — Button gets first crack at the tap so the
+        // flip gesture below never fires inside its hit area.
+        .overlay(alignment: .topTrailing) {
+            Button {
+                Task { @MainActor in
+                    SpeechService.shared.speak(
+                        word.sourceText,
+                        language: word.direction.sourceLanguageCode
+                    )
+                }
+            } label: {
+                Image(systemName: "speaker.wave.2.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(ScaleButtonStyle())
+            .accessibilityLabel(Text("speech.button.aria"))
+            .padding(.trailing, 6)
+            .padding(.top, 2)
+        }
     }
 
     private var backFace: some View {
@@ -639,6 +661,18 @@ private struct WordRow: View {
                 revealed = false
             }
         }
+    }
+}
+
+/// Small scale + opacity pulse on press — used by the speaker buttons.
+/// Lives at file scope so both `WordRow` and any other call site (e.g.
+/// `WordDetailModal`) can share the same feel.
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.82 : 1.0)
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .animation(.spring(response: 0.22, dampingFraction: 0.65), value: configuration.isPressed)
     }
 }
 

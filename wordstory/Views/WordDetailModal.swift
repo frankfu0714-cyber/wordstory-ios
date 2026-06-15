@@ -9,10 +9,29 @@ struct WordDetailModal: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text(word.sourceText)
-                    .font(Theme.serif(28, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .padding(.top, 4)
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(word.sourceText)
+                        .font(Theme.serif(28, weight: .semibold))
+                        .foregroundStyle(Theme.ink)
+                    Spacer(minLength: 8)
+                    Button {
+                        Task { @MainActor in
+                            SpeechService.shared.speak(
+                                word.sourceText,
+                                language: word.direction.sourceLanguageCode
+                            )
+                        }
+                    } label: {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .accessibilityLabel(Text("speech.button.aria"))
+                }
+                .padding(.top, 4)
 
                 if !word.definition.isEmpty {
                     Text(word.definition)

@@ -31,4 +31,13 @@ enum LanguageDirection: String, CaseIterable, Codable, Identifiable {
         case .zhToEn: return .enToZh
         }
     }
+
+    /// BCP-47 language code for the source word — the vocabulary side.
+    /// Used by `SpeechService` to pick a voice for the pronunciation button.
+    var sourceLanguageCode: String {
+        switch self {
+        case .enToZh: return "en-US"
+        case .zhToEn: return "zh-TW"
+        }
+    }
 }

@@ -18,21 +18,24 @@ struct WordsView: View {
     @Binding var showSettings: Bool
     @Query private var allWords: [Word]
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("languageDirection") private var directionRaw = LanguageDirection.enToZh.rawValue
+    private var direction: LanguageDirection {
+        LanguageDirection(rawValue: directionRaw) ?? .enToZh
+    }
 
-    @State private var searchText = ""
     @State private var sortOrder: WordSortOrder = .recent
     @State private var showAddSheet = false
 
-    private var filteredAndSorted: [Word] {
+    // ---- type-to-add bar state ----
+    @State private var addText = ""
+    @State private var isAdding = false
+    @State private var flashedWordID: UUID?
+    @State private var pendingScrollID: UUID?
+    @State private var toastMessage: String?
+    @FocusState private var addFieldFocused: Bool
+
+    private var sortedWords: [Word] {
         var list = allWords
-        if !searchText.isEmpty {
-            let q = searchText.lowercased()
-            list = list.filter {
-                $0.sourceText.lowercased().contains(q)
-                || $0.definition.lowercased().contains(q)
-                || $0.example.lowercased().contains(q)
-            }
-        }
         switch sortOrder {
         case .recent:
             list.sort { $0.addedDate > $1.addedDate }
@@ -49,49 +52,74 @@ struct WordsView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .bottom) {
                 Theme.background.ignoresSafeArea()
-                if allWords.isEmpty {
-                    emptyState
-                } else if filteredAndSorted.isEmpty {
-                    noMatches
-                } else {
-                    List {
-                        ForEach(filteredAndSorted) { word in
-                            WordRow(
-                                word: word,
-                                onToggleLearned: { toggleLearned(word) },
-                                onRetryFetch: {
-                                    Task { @MainActor in await refetch(word) }
+                VStack(spacing: 0) {
+                    typeToAddBar
+                    if allWords.isEmpty {
+                        emptyState
+                    } else {
+                        ScrollViewReader { proxy in
+                            List {
+                                ForEach(sortedWords) { word in
+                                    WordRow(
+                                        word: word,
+                                        isFlashed: flashedWordID == word.id,
+                                        onToggleLearned: { toggleLearned(word) },
+                                        onRetryFetch: {
+                                            Task { @MainActor in await refetch(word) }
+                                        }
+                                    )
+                                        .id(word.id)
+                                        .listRowBackground(Theme.paper)
+                                        .swipeActions(edge: .trailing) {
+                                            Button(role: .destructive) {
+                                                delete(word)
+                                            } label: {
+                                                Label("action.delete", systemImage: "trash")
+                                            }
+                                        }
+                                        .swipeActions(edge: .leading) {
+                                            Button {
+                                                toggleLearned(word)
+                                            } label: {
+                                                Label(
+                                                    word.learned ? "action.mark_unlearned" : "action.mark_learned",
+                                                    systemImage: word.learned ? "circle" : "checkmark.circle"
+                                                )
+                                            }
+                                            .tint(Color.accentColor)
+                                        }
                                 }
-                            )
-                                .listRowBackground(Theme.paper)
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        delete(word)
-                                    } label: {
-                                        Label("action.delete", systemImage: "trash")
+                            }
+                            .scrollContentBackground(.hidden)
+                            .listStyle(.insetGrouped)
+                            .refreshable { await refetchAllPending() }
+                            .onChange(of: pendingScrollID) { _, newValue in
+                                if let newValue {
+                                    withAnimation(.easeInOut(duration: 0.35)) {
+                                        proxy.scrollTo(newValue, anchor: .center)
                                     }
+                                    pendingScrollID = nil
                                 }
-                                .swipeActions(edge: .leading) {
-                                    Button {
-                                        toggleLearned(word)
-                                    } label: {
-                                        Label(
-                                            word.learned ? "action.mark_unlearned" : "action.mark_learned",
-                                            systemImage: word.learned ? "circle" : "checkmark.circle"
-                                        )
-                                    }
-                                    .tint(Color.accentColor)
-                                }
+                            }
                         }
                     }
-                    .scrollContentBackground(.hidden)
-                    .listStyle(.insetGrouped)
-                    .refreshable { await refetchAllPending() }
+                }
+                if let toastMessage {
+                    Text(toastMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(Theme.ink.opacity(0.92))
+                        .clipShape(Capsule())
+                        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                        .padding(.bottom, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .searchable(text: $searchText, prompt: Text("search.placeholder"))
+            .animation(.spring(response: 0.42, dampingFraction: 0.85), value: toastMessage)
             .navigationTitle("tab.words")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -132,7 +160,51 @@ struct WordsView: View {
         }
     }
 
-    // MARK: - Empty states
+    // MARK: - Type-to-add bar
+
+    /// Repurposed from the previous search field: now Enter on this field
+    /// triggers a fresh definition fetch + insert. The bulk-paste "+" button
+    /// in the nav bar is the other path for adding many at once.
+    private var typeToAddBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "plus.circle")
+                .foregroundStyle(Theme.inkQuiet)
+                .font(.system(size: 16))
+            TextField("add_field.placeholder", text: $addText)
+                .focused($addFieldFocused)
+                .submitLabel(.done)
+                .onSubmit { Task { @MainActor in await submitAdd() } }
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .disabled(isAdding)
+            if isAdding {
+                ProgressView()
+                    .controlSize(.small)
+            } else if !addText.isEmpty {
+                Button {
+                    addText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Theme.inkQuiet.opacity(0.6))
+                        .font(.system(size: 16))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Theme.paper)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Theme.rule, lineWidth: 1)
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+    }
+
+    // MARK: - Empty state
 
     private var emptyState: some View {
         VStack(spacing: 12) {
@@ -148,17 +220,7 @@ struct WordsView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
         }
-    }
-
-    private var noMatches: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 28))
-                .foregroundStyle(Theme.inkQuiet.opacity(0.6))
-            Text("words.no_matches")
-                .font(.body)
-                .foregroundStyle(Theme.inkQuiet)
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Mutations
@@ -171,6 +233,75 @@ struct WordsView: View {
     private func delete(_ word: Word) {
         modelContext.delete(word)
         try? modelContext.save()
+    }
+
+    // MARK: - Type-to-add submit / flash / toast
+
+    /// Called when the user hits Enter in the type-to-add bar.
+    /// - Trims whitespace.
+    /// - Case-insensitively checks for an existing word; if found, flashes
+    ///   that row, scrolls to it, shows the duplicate toast, and exits.
+    /// - Otherwise inserts an empty Word into SwiftData (so the row appears
+    ///   immediately at the top), kicks off the definition fetch, and back-
+    ///   fills success or marks `definitionFetchFailed = true`.
+    @MainActor
+    private func submitAdd() async {
+        let trimmed = addText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !isAdding else { return }
+
+        // Duplicate check (case-insensitive on the source text).
+        let lower = trimmed.lowercased()
+        if let existing = allWords.first(where: { $0.sourceText.lowercased() == lower }) {
+            addText = ""
+            flash(existing.id)
+            pendingScrollID = existing.id
+            showToast(String(localized: "add_field.duplicate_toast"))
+            return
+        }
+
+        isAdding = true
+        let word = Word(sourceText: trimmed, direction: direction)
+        modelContext.insert(word)
+        try? modelContext.save()
+        let id = word.id
+        let dir = direction
+        addText = ""
+        // Hand focus back so the user can keep typing rapid-fire if they want.
+        addFieldFocused = true
+
+        do {
+            let resp = try await APIService.defineWord(trimmed, direction: dir)
+            if let w = findWord(byID: id) {
+                w.definition = resp.definition
+                w.example = resp.example
+                w.definitionFetchFailed = false
+            }
+        } catch {
+            print("[WordsView] type-to-add '\(trimmed)' failed: \(error.localizedDescription)")
+            if let w = findWord(byID: id) {
+                w.definitionFetchFailed = true
+            }
+        }
+        try? modelContext.save()
+        isAdding = false
+    }
+
+    /// Briefly highlight a row (used when typing an already-present word).
+    private func flash(_ id: UUID) {
+        flashedWordID = id
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(1500))
+            if flashedWordID == id { flashedWordID = nil }
+        }
+    }
+
+    /// Show a small bottom toast that auto-dismisses after ~2s.
+    private func showToast(_ message: String) {
+        toastMessage = message
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            if toastMessage == message { toastMessage = nil }
+        }
     }
 
     /// Re-fetches the definition for a single word. Called from the back-face
@@ -248,6 +379,7 @@ struct WordsView: View {
 /// every fresh launch starts with all cards hidden.
 private struct WordRow: View {
     let word: Word
+    let isFlashed: Bool
     let onToggleLearned: () -> Void
     let onRetryFetch: () -> Void
 
@@ -270,6 +402,15 @@ private struct WordRow: View {
         .rotation3DEffect(.degrees(revealed ? 180 : 0), axis: (x: 0, y: 1, z: 0))
         .animation(.spring(response: 0.55, dampingFraction: 0.75), value: revealed)
         .contentShape(Rectangle())
+        // Subtle yellow flash when the user types a word that's already in
+        // the list — see WordsView.flash(_:).
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.yellow.opacity(isFlashed ? 0.22 : 0))
+                .padding(.horizontal, -10)
+                .padding(.vertical, -4)
+                .animation(.easeInOut(duration: 0.35), value: isFlashed)
+        )
         .onTapGesture { toggle() }
         .onDisappear {
             hideTask?.cancel()

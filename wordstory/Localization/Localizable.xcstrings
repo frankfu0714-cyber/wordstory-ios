@@ -1,421 +1,1155 @@
 {
-  "sourceLanguage" : "en",
-  "version" : "1.0",
-  "strings" : {
-    "tab.words" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Words" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "詞彙" } }
-      }
-    },
-    "tab.story" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Story" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "故事" } }
-      }
-    },
-    "nav.settings" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "設定" } }
-      }
-    },
-    "search.placeholder" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search…" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "搜尋…" } }
-      }
-    },
-    "sort.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sort" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "排序" } }
-      }
-    },
-    "sort.recent" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recently added" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "最近加入" } }
-      }
-    },
-    "sort.alpha" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "A–Z" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "字母序" } }
-      }
-    },
-    "sort.unlearned" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unlearned first" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未學會的優先" } }
-      }
-    },
-    "action.add_word" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add word" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "加入詞彙" } }
-      }
-    },
-    "action.add" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "加入" } }
-      }
-    },
-    "action.cancel" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "取消" } }
-      }
-    },
-    "action.done" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "完成" } }
-      }
-    },
-    "action.delete" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "刪除" } }
-      }
-    },
-    "action.mark_learned" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mark as learned" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "標記已學會" } }
-      }
-    },
-    "action.mark_unlearned" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mark unlearned" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "標記未學會" } }
-      }
-    },
-    "words.empty.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No words yet" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "還沒有詞彙" } }
-      }
-    },
-    "words.empty.subtitle" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap + to save a word you want to learn." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "點右上角 + 加入你想學的詞。" } }
-      }
-    },
-    "words.no_matches" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No matching words." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "找不到符合的詞彙。" } }
-      }
-    },
-    "add.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add a word" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "加入詞彙" } }
-      }
-    },
-    "add.single.label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Word" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "詞彙" } }
-      }
-    },
-    "add.single.placeholder" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "serendipity, 婉約…" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "serendipity、婉約…" } }
-      }
-    },
-    "add.paste.label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paste many at once" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "一次貼上多個" } }
-      }
-    },
-    "add.paste.placeholder" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "One word per line, or comma-separated" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "一行一個詞，或以逗號分隔" } }
-      }
-    },
-    "add.paste.hint" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Definitions are fetched for each word." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "每個詞會自動查詢釋義。" } }
-      }
-    },
-    "add.direction_hint" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Change in Settings → Direction." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可在「設定 → 學習方向」更改。" } }
-      }
-    },
-    "add.error.duplicates_only" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Those words are already in your list." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這些詞已在你的清單中。" } }
-      }
-    },
-    "story.select.label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select words to include" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇要用到的詞" } }
-      }
-    },
-    "story.select.empty" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add some words first." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先加入一些詞彙。" } }
-      }
-    },
-    "story.select.all_unlearned" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select all unlearned" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "全選未學會" } }
-      }
-    },
-    "story.select.clear" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "清除" } }
-      }
-    },
-    "story.select.count %lld" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld selected" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已選 %lld 個" } }
-      }
-    },
-    "story.style.label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Style" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "體裁" } }
-      }
-    },
-    "story.custom.placeholder" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Describe your own style…" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "描述你想要的風格…" } }
-      }
-    },
-    "story.generate" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Generate" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "生成" } }
-      }
-    },
-    "story.generating" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Writing…" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "撰寫中…" } }
-      }
-    },
-    "story.meta.count %lld" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld words woven in" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已織入 %lld 個詞彙" } }
-      }
-    },
-    "story.regenerate" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Regenerate" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "重新生成" } }
-      }
-    },
-    "style.short_story.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Short story" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "短篇故事" } }
-      }
-    },
-    "style.short_story.description" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "~150 words, one scene" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "約 150 字，單一場景" } }
-      }
-    },
-    "style.news_article.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "News article" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "新聞報導" } }
-      }
-    },
-    "style.news_article.description" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "~200 words, journalistic" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "約 200 字，新聞語氣" } }
-      }
-    },
-    "style.dialogue.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dialogue" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "對話" } }
-      }
-    },
-    "style.dialogue.description" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Two characters speaking" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "兩位角色的對話" } }
-      }
-    },
-    "style.letter.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Letter" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "書信" } }
-      }
-    },
-    "style.letter.description" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "A warm personal letter" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "一封親切的信" } }
-      }
-    },
-    "style.poem.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Poem" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "詩" } }
-      }
-    },
-    "style.poem.description" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Short, vivid, looser usage" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "短小、生動、可隱喻" } }
-      }
-    },
-    "style.custom.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "自訂" } }
-      }
-    },
-    "style.custom.description" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Describe your own style" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "自行描述風格" } }
-      }
-    },
-    "detail.no_definition" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "(no definition yet)" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "（尚無釋義）" } }
-      }
-    },
-    "settings.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "設定" } }
-      }
-    },
-    "settings.language.label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Language" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "介面語言" } }
-      }
-    },
-    "settings.language.system" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Follow system" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "跟隨系統" } }
-      }
-    },
-    "settings.language.hint" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Changes apply fully on next launch." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "下次啟動時完整套用。" } }
-      }
-    },
-    "settings.direction.label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Direction" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "學習方向" } }
-      }
-    },
-    "settings.direction.learning" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "I'm learning" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "我正在學" } }
-      }
-    },
-    "settings.direction.hint" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap to swap. Existing words keep their original direction." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "點此切換。已存在的詞會保留原本的方向。" } }
-      }
-    },
-    "settings.about.label" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "About" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "關於" } }
-      }
-    },
-    "settings.about.version" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Version" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "版本" } }
-      }
-    },
-    "settings.about.feedback" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Feedback / about" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "回饋意見 / 關於" } }
-      }
+  "sourceLanguage": "en",
+  "strings": {
+    "English": {
+      "comment": "A language option in the settings.",
+      "isCommentAutoGenerated": true
+    },
+    "action.add": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加入"
+          }
+        }
+      }
+    },
+    "action.add_word": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add word"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加入詞彙"
+          }
+        }
+      }
+    },
+    "action.cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
+    "action.delete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除"
+          }
+        }
+      }
+    },
+    "action.done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        }
+      }
+    },
+    "action.mark_learned": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark as learned"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "標記已學會"
+          }
+        }
+      }
     },
-    "settings.clear.button" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear all words" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "清除所有詞彙" } }
-      }
-    },
-    "settings.clear.hint" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This cannot be undone." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此動作無法復原。" } }
-      }
-    },
-    "settings.clear.confirm.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear all words?" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "清除所有詞彙？" } }
-      }
-    },
-    "settings.clear.confirm.message" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every saved word, definition, and example will be removed from this device." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "本機所有已存詞彙、釋義與例句皆會刪除。" } }
-      }
-    },
-    "settings.clear.confirm.confirm" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "清除" } }
-      }
-    },
-    "error.invalid_response" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The server returned an invalid response." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "伺服器回應異常。" } }
-      }
-    },
-    "error.server_generic" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Something went wrong on the server." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "伺服器發生錯誤。" } }
-      }
-    },
-    "error.decoding" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not read the server's response." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "無法解析伺服器的回應。" } }
-      }
-    },
-    "error.generic" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Generation failed. Please try again." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "生成失敗，請再試一次。" } }
-      }
+    "action.mark_unlearned": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark unlearned"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "標記未學會"
+          }
+        }
+      }
+    },
+    "add.direction_hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change in Settings → Direction."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可在「設定 → 學習方向」更改。"
+          }
+        }
+      }
+    },
+    "add.error.duplicates_only": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Those words are already in your list."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這些詞已在你的清單中。"
+          }
+        }
+      }
+    },
+    "add.paste.hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Definitions are fetched for each word."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每個詞會自動查詢釋義。"
+          }
+        }
+      }
+    },
+    "add.paste.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste many at once"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一次貼上多個"
+          }
+        }
+      }
+    },
+    "add.paste.placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One word per line, or comma-separated"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一行一個詞，或以逗號分隔"
+          }
+        }
+      }
+    },
+    "add.single.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "詞彙"
+          }
+        }
+      }
+    },
+    "add.single.placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "serendipity, 婉約…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "serendipity、婉約…"
+          }
+        }
+      }
+    },
+    "add.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a word"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加入詞彙"
+          }
+        }
+      }
+    },
+    "add_field.duplicate_toast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already in your list"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已在清單中"
+          }
+        }
+      }
+    },
+    "add_field.placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a new word..."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增詞語…"
+          }
+        }
+      }
+    },
+    "detail.no_definition": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(no definition yet)"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "（尚無釋義）"
+          }
+        }
+      }
+    },
+    "error.decoding": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not read the server's response."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法解析伺服器的回應。"
+          }
+        }
+      }
+    },
+    "error.generic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generation failed. Please try again."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "生成失敗，請再試一次。"
+          }
+        }
+      }
+    },
+    "error.invalid_response": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server returned an invalid response."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "伺服器回應異常。"
+          }
+        }
+      }
+    },
+    "error.server_generic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong on the server."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "伺服器發生錯誤。"
+          }
+        }
+      }
+    },
+    "nav.settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        }
+      }
+    },
+    "search.placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜尋…"
+          }
+        }
+      }
+    },
+    "settings.about.feedback": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback / about"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回饋意見 / 關於"
+          }
+        }
+      }
+    },
+    "settings.about.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "關於"
+          }
+        }
+      }
+    },
+    "settings.about.version": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本"
+          }
+        }
+      }
+    },
+    "settings.clear.button": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear all words"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除所有詞彙"
+          }
+        }
+      }
+    },
+    "settings.clear.confirm.confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除"
+          }
+        }
+      }
+    },
+    "settings.clear.confirm.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every saved word, definition, and example will be removed from this device."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本機所有已存詞彙、釋義與例句皆會刪除。"
+          }
+        }
+      }
+    },
+    "settings.clear.confirm.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear all words?"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除所有詞彙？"
+          }
+        }
+      }
+    },
+    "settings.clear.hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This cannot be undone."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此動作無法復原。"
+          }
+        }
+      }
+    },
+    "settings.direction.hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to swap. Existing words keep their original direction."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點此切換。已存在的詞會保留原本的方向。"
+          }
+        }
+      }
+    },
+    "settings.direction.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direction"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "學習方向"
+          }
+        }
+      }
+    },
+    "settings.direction.learning": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I'm learning"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我正在學"
+          }
+        }
+      }
+    },
+    "settings.language.hint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes apply fully on next launch."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次啟動時完整套用。"
+          }
+        }
+      }
+    },
+    "settings.language.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "介面語言"
+          }
+        }
+      }
+    },
+    "settings.language.system": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow system"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟隨系統"
+          }
+        }
+      }
+    },
+    "settings.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        }
+      }
+    },
+    "sort.alpha": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A–Z"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "字母序"
+          }
+        }
+      }
+    },
+    "sort.recent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently added"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近加入"
+          }
+        }
+      }
+    },
+    "sort.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sort"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排序"
+          }
+        }
+      }
+    },
+    "sort.unlearned": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlearned first"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未學會的優先"
+          }
+        }
+      }
+    },
+    "story.custom.placeholder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe your own style…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "描述你想要的風格…"
+          }
+        }
+      }
+    },
+    "story.generate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "生成"
+          }
+        }
+      }
+    },
+    "story.generating": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writing…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撰寫中…"
+          }
+        }
+      }
+    },
+    "story.meta.count %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld words woven in"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已織入 %lld 個詞彙"
+          }
+        }
+      }
+    },
+    "story.regenerate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerate"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新生成"
+          }
+        }
+      }
+    },
+    "story.select.all_unlearned": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select all unlearned"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全選未學會"
+          }
+        }
+      }
+    },
+    "story.select.clear": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除"
+          }
+        }
+      }
+    },
+    "story.select.count %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld selected"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已選 %lld 個"
+          }
+        }
+      }
+    },
+    "story.select.empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add some words first."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先加入一些詞彙。"
+          }
+        }
+      }
+    },
+    "story.select.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select words to include"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選擇要用到的詞"
+          }
+        }
+      }
+    },
+    "story.style.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Style"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "體裁"
+          }
+        }
+      }
+    },
+    "style.custom.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe your own style"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自行描述風格"
+          }
+        }
+      }
+    },
+    "style.custom.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自訂"
+          }
+        }
+      }
+    },
+    "style.dialogue.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Two characters speaking"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兩位角色的對話"
+          }
+        }
+      }
+    },
+    "style.dialogue.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dialogue"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "對話"
+          }
+        }
+      }
+    },
+    "style.letter.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A warm personal letter"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一封親切的信"
+          }
+        }
+      }
+    },
+    "style.letter.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letter"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書信"
+          }
+        }
+      }
+    },
+    "style.news_article.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~200 words, journalistic"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "約 200 字，新聞語氣"
+          }
+        }
+      }
+    },
+    "style.news_article.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "News article"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新聞報導"
+          }
+        }
+      }
+    },
+    "style.poem.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short, vivid, looser usage"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "短小、生動、可隱喻"
+          }
+        }
+      }
+    },
+    "style.poem.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poem"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "詩"
+          }
+        }
+      }
+    },
+    "style.short_story.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~150 words, one scene"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "約 150 字，單一場景"
+          }
+        }
+      }
+    },
+    "style.short_story.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short story"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "短篇故事"
+          }
+        }
+      }
+    },
+    "tab.story": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Story"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "故事"
+          }
+        }
+      }
+    },
+    "tab.words": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Words"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "詞彙"
+          }
+        }
+      }
+    },
+    "words.empty.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap + to save a word you want to learn."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點右上角 + 加入你想學的詞。"
+          }
+        }
+      }
+    },
+    "words.empty.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No words yet"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "還沒有詞彙"
+          }
+        }
+      }
+    },
+    "words.no_matches": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching words."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到符合的詞彙。"
+          }
+        }
+      }
+    },
+    "→": {
+      "comment": "A separator between the two languages.",
+      "isCommentAutoGenerated": true
+    },
+    "繁體中文": {
+      "comment": "A Chinese-traditional name for the language.",
+      "isCommentAutoGenerated": true
     }
-  }
+  },
+  "version": "1.1"
 }

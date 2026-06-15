@@ -89,7 +89,7 @@ struct APIService {
         /// Full Traditional Chinese version of the same piece.
         let story_zh: String
 
-        struct SentencePair: Decodable, Hashable {
+        struct SentencePair: Codable, Hashable {
             let en: String
             let zh: String
         }

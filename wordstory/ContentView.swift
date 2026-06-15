@@ -13,6 +13,10 @@ struct ContentView: View {
                 .tabItem {
                     Label("tab.story", systemImage: "text.book.closed.fill")
                 }
+            SavedStoriesView(showSettings: $showSettings)
+                .tabItem {
+                    Label("saved.tab", systemImage: "heart.fill")
+                }
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet()
@@ -22,5 +26,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: Word.self, inMemory: true)
+        .modelContainer(for: [Word.self, SavedStory.self], inMemory: true)
 }

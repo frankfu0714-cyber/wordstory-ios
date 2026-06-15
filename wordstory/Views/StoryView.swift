@@ -37,6 +37,8 @@ struct FlowLayout: Layout {
 struct StoryView: View {
     @Binding var showSettings: Bool
     @Query private var allWords: [Word]
+    @Query private var savedStories: [SavedStory]
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("languageDirection") private var directionRaw = LanguageDirection.enToZh.rawValue
     private var direction: LanguageDirection {
         LanguageDirection(rawValue: directionRaw) ?? .enToZh
@@ -55,6 +57,7 @@ struct StoryView: View {
     /// When true, each English sentence has its Chinese translation rendered
     /// directly below it. When false, only the English story shows.
     @State private var showChinese: Bool = false
+    @State private var toastMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -107,6 +110,20 @@ struct StoryView: View {
                 }
                 return .systemAction
             })
+            .overlay(alignment: .bottom) {
+                if let toastMessage {
+                    Text(toastMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(Theme.ink.opacity(0.92))
+                        .clipShape(Capsule())
+                        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                        .padding(.bottom, 90)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
     }
 
@@ -317,11 +334,26 @@ struct StoryView: View {
                 fallbackBlocks(generated: generated)
             }
 
-            HStack {
+            HStack(spacing: 16) {
                 Text("story.meta.count \(generatedFor.count)")
                     .font(.footnote)
                     .foregroundStyle(Theme.inkQuiet)
                 Spacer()
+                Button {
+                    toggleSave()
+                } label: {
+                    Label(
+                        isCurrentStorySaved ? "saved.save_button" : "saved.save_button",
+                        systemImage: isCurrentStorySaved ? "heart.fill" : "heart"
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(isCurrentStorySaved ? Color.accentColor : Theme.inkSoft)
+                    .labelStyle(.iconOnly)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .accessibilityLabel(Text("saved.save_button"))
                 Button {
                     Task { await generate() }
                 } label: {
@@ -495,6 +527,60 @@ struct StoryView: View {
     private func containsCJK(_ s: String) -> Bool {
         s.unicodeScalars.contains { scalar in
             (0x3400...0x9FFF).contains(scalar.value) || (0xF900...0xFAFF).contains(scalar.value)
+        }
+    }
+
+    // MARK: - Save / unsave
+
+    /// Stable JSON representation of the current `generated.sentences`.
+    /// Identity is by exact-content match — two stories with the same
+    /// sentence-pair array are considered the same.
+    private var currentSentencesJSON: String? {
+        guard let pairs = generated?.sentences, !pairs.isEmpty else { return nil }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys] // stable hash, immune to dict-order quirks
+        guard let data = try? encoder.encode(pairs) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private var isCurrentStorySaved: Bool {
+        guard let json = currentSentencesJSON else { return false }
+        return savedStories.contains { $0.sentencesJSON == json }
+    }
+
+    private func toggleSave() {
+        guard let generated, let json = currentSentencesJSON else { return }
+        if let existing = savedStories.first(where: { $0.sentencesJSON == json }) {
+            modelContext.delete(existing)
+            try? modelContext.save()
+            showToast(String(localized: "saved.unsaved_toast"))
+            return
+        }
+        let preview = String(generated.story_en.prefix(40))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let story = SavedStory(
+            style: style,
+            direction: direction,
+            sentencesJSON: json,
+            vocabIDs: generatedFor.map(\.id),
+            titlePreview: preview,
+            storyEnFull: generated.story_en,
+            storyZhFull: generated.story_zh
+        )
+        modelContext.insert(story)
+        try? modelContext.save()
+        showToast(String(localized: "saved.saved_toast"))
+    }
+
+    private func showToast(_ message: String) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+            toastMessage = message
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            if toastMessage == message {
+                withAnimation { toastMessage = nil }
+            }
         }
     }
 

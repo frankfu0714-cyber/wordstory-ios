@@ -15,7 +15,7 @@ struct WordstoryApp: App {
                 .environment(\.locale, currentLocale)
                 .tint(Color.accentColor)
         }
-        .modelContainer(for: Word.self)
+        .modelContainer(for: [Word.self, SavedStory.self])
     }
 
     private var currentLocale: Locale {

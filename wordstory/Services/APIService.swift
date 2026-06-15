@@ -109,19 +109,25 @@ struct APIService {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
+            print("[APIService] POST \(path) transport error: \(error.localizedDescription)")
             throw APIError.transport(underlying: error)
         }
 
         guard let http = response as? HTTPURLResponse else {
+            print("[APIService] POST \(path) — non-HTTP response: \(type(of: response))")
             throw APIError.invalidResponse
         }
         guard (200..<300).contains(http.statusCode) else {
             let message = (try? JSONDecoder().decode(ServerError.self, from: data))?.error
+            let bodySnippet = String(data: data, encoding: .utf8)?.prefix(200) ?? ""
+            print("[APIService] POST \(path) HTTP \(http.statusCode): \(message ?? String(bodySnippet))")
             throw APIError.server(status: http.statusCode, message: message)
         }
         do {
             return try JSONDecoder().decode(Response.self, from: data)
         } catch {
+            let bodySnippet = String(data: data, encoding: .utf8)?.prefix(200) ?? ""
+            print("[APIService] POST \(path) decode failed: \(error). Body: \(bodySnippet)")
             throw APIError.decoding
         }
     }

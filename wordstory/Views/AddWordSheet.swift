@@ -150,14 +150,22 @@ struct AddWordSheet: View {
 
         // Fetch definitions concurrently OFF the main actor — only the
         // (id, text) tuples cross the boundary, never the @Model instances.
+        // Errors are logged in the child task (so they show up in Xcode
+        // console) and surface to the UI via the `definitionFetchFailed`
+        // flag below — no more silent `try?` swallowing.
         let dir = direction
         let results: [(UUID, APIService.DefineResponse?)] = await withTaskGroup(
             of: (UUID, APIService.DefineResponse?).self
         ) { group in
             for (id, text) in pending {
                 group.addTask {
-                    let resp = try? await APIService.defineWord(text, direction: dir)
-                    return (id, resp)
+                    do {
+                        let resp = try await APIService.defineWord(text, direction: dir)
+                        return (id, resp)
+                    } catch {
+                        print("[AddWordSheet] define '\(text)' failed: \(error.localizedDescription)")
+                        return (id, nil)
+                    }
                 }
             }
             var out: [(UUID, APIService.DefineResponse?)] = []
@@ -167,9 +175,14 @@ struct AddWordSheet: View {
 
         // Back on the main actor: look each model up by id and fill in.
         for (id, resp) in results {
-            guard let resp, let word = findWord(byID: id) else { continue }
-            word.definition = resp.definition
-            word.example = resp.example
+            guard let word = findWord(byID: id) else { continue }
+            if let resp {
+                word.definition = resp.definition
+                word.example = resp.example
+                word.definitionFetchFailed = false
+            } else {
+                word.definitionFetchFailed = true
+            }
         }
         try? modelContext.save()
 

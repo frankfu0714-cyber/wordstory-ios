@@ -58,7 +58,13 @@ struct WordsView: View {
                 } else {
                     List {
                         ForEach(filteredAndSorted) { word in
-                            WordRow(word: word, onToggleLearned: { toggleLearned(word) })
+                            WordRow(
+                                word: word,
+                                onToggleLearned: { toggleLearned(word) },
+                                onRetryFetch: {
+                                    Task { @MainActor in await refetch(word) }
+                                }
+                            )
                                 .listRowBackground(Theme.paper)
                                 .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) {
@@ -82,6 +88,7 @@ struct WordsView: View {
                     }
                     .scrollContentBackground(.hidden)
                     .listStyle(.insetGrouped)
+                    .refreshable { await refetchAllPending() }
                 }
             }
             .searchable(text: $searchText, prompt: Text("search.placeholder"))
@@ -165,6 +172,73 @@ struct WordsView: View {
         modelContext.delete(word)
         try? modelContext.save()
     }
+
+    /// Re-fetches the definition for a single word. Called from the back-face
+    /// retry button. Logs to console on failure.
+    @MainActor
+    private func refetch(_ word: Word) async {
+        let id = word.id
+        let text = word.sourceText
+        let dir = word.direction
+        do {
+            let resp = try await APIService.defineWord(text, direction: dir)
+            guard let w = findWord(byID: id) else { return }
+            w.definition = resp.definition
+            w.example = resp.example
+            w.definitionFetchFailed = false
+            try? modelContext.save()
+        } catch {
+            print("[WordsView] refetch '\(text)' failed: \(error.localizedDescription)")
+            guard let w = findWord(byID: id) else { return }
+            w.definitionFetchFailed = true
+            try? modelContext.save()
+        }
+    }
+
+    /// Pull-to-refresh handler. Re-fetches every word whose previous fetch
+    /// failed AND every word whose definition is still empty (e.g. legacy
+    /// rows from before the fail-flag existed). Concurrent; preserves
+    /// per-row success/failure independently.
+    @MainActor
+    private func refetchAllPending() async {
+        let pending = allWords
+            .filter { $0.definitionFetchFailed || $0.definition.isEmpty }
+            .map { (id: $0.id, text: $0.sourceText, dir: $0.direction) }
+        guard !pending.isEmpty else { return }
+        print("[WordsView] pull-to-refresh: re-fetching \(pending.count) word(s)")
+
+        await withTaskGroup(of: (UUID, APIService.DefineResponse?).self) { group in
+            for item in pending {
+                group.addTask {
+                    do {
+                        let resp = try await APIService.defineWord(item.text, direction: item.dir)
+                        return (item.id, resp)
+                    } catch {
+                        print("[WordsView] bulk refetch '\(item.text)' failed: \(error.localizedDescription)")
+                        return (item.id, nil)
+                    }
+                }
+            }
+            for await (id, resp) in group {
+                guard let w = findWord(byID: id) else { continue }
+                if let resp {
+                    w.definition = resp.definition
+                    w.example = resp.example
+                    w.definitionFetchFailed = false
+                } else {
+                    w.definitionFetchFailed = true
+                }
+            }
+        }
+        try? modelContext.save()
+    }
+
+    private func findWord(byID id: UUID) -> Word? {
+        let descriptor = FetchDescriptor<Word>(
+            predicate: #Predicate<Word> { $0.id == id }
+        )
+        return try? modelContext.fetch(descriptor).first
+    }
 }
 
 /// Flashcard-style row: shows only the word until tapped. Tapping flips the
@@ -175,9 +249,11 @@ struct WordsView: View {
 private struct WordRow: View {
     let word: Word
     let onToggleLearned: () -> Void
+    let onRetryFetch: () -> Void
 
     @State private var revealed = false
     @State private var hideTask: Task<Void, Never>?
+    @State private var isRetrying = false
 
     private static let autoHideDelay: Duration = .seconds(300)
 
@@ -217,6 +293,15 @@ private struct WordRow: View {
                         .foregroundStyle(.green.opacity(0.7))
                         .font(.system(size: 14))
                 }
+                if word.definitionFetchFailed {
+                    // Purely informational on the front face; the tappable
+                    // retry control lives on the back face so tapping here
+                    // still flips the card normally.
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Color.orange.opacity(0.85))
+                        .font(.system(size: 13))
+                        .accessibilityLabel(Text("words.fetch_failed"))
+                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -228,6 +313,8 @@ private struct WordRow: View {
         // Only the definition. The example sentence is preserved in the data
         // model and still rendered in `WordDetailModal` from the Story tab —
         // the flashcard itself stays clean: front = word, back = meaning.
+        // If the most recent fetch failed, swap the definition slot for an
+        // inline retry button that doesn't conflict with the card-flip tap.
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(word.sourceText)
@@ -247,6 +334,8 @@ private struct WordRow: View {
                     .font(Theme.serif(18))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(6)
+            } else if word.definitionFetchFailed {
+                retryRow
             } else {
                 Text("detail.no_definition")
                     .font(.subheadline.italic())
@@ -256,6 +345,52 @@ private struct WordRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 8)
         .opacity(word.learned ? 0.6 : 1.0)
+    }
+
+    /// Inline retry control shown on the back face when the most recent
+    /// fetch failed. Implemented as a Button so its tap is consumed first
+    /// and doesn't bubble up to the parent's flip gesture.
+    private var retryRow: some View {
+        Button {
+            guard !isRetrying else { return }
+            isRetrying = true
+            onRetryFetch()
+            // Optimistic: clear the "retrying" flag once the model has had
+            // a moment to flip back (the parent saves on the main actor
+            // after the await completes). 1.5s is a small ceiling — the
+            // user sees feedback even on instant successes.
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(1500))
+                isRetrying = false
+            }
+        } label: {
+            HStack(spacing: 8) {
+                if isRetrying {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Color.orange.opacity(0.85))
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("words.fetch_failed")
+                        .font(.footnote)
+                        .foregroundStyle(Theme.danger)
+                    Text("action.retry_fetch")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.inkQuiet)
+                }
+                Spacer()
+                Image(systemName: "arrow.clockwise")
+                    .foregroundStyle(Color.accentColor)
+                    .font(.footnote)
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(Color.orange.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Flip control

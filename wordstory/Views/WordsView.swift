@@ -225,7 +225,10 @@ private struct WordRow: View {
     }
 
     private var backFace: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        // Only the definition. The example sentence is preserved in the data
+        // model and still rendered in `WordDetailModal` from the Story tab —
+        // the flashcard itself stays clean: front = word, back = meaning.
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(word.sourceText)
                     .font(Theme.serif(17, weight: .semibold))
@@ -241,24 +244,17 @@ private struct WordRow: View {
             }
             if !word.definition.isEmpty {
                 Text(word.definition)
-                    .font(.system(.subheadline))
+                    .font(Theme.serif(18))
                     .foregroundStyle(Theme.ink)
-                    .lineLimit(8)
-            }
-            if !word.example.isEmpty {
-                Text(word.example)
-                    .font(Theme.serif(14).italic())
+                    .lineLimit(6)
+            } else {
+                Text("detail.no_definition")
+                    .font(.subheadline.italic())
                     .foregroundStyle(Theme.inkQuiet)
-                    .padding(.leading, 10)
-                    .overlay(alignment: .leading) {
-                        Rectangle()
-                            .fill(Theme.rule)
-                            .frame(width: 2)
-                    }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
         .opacity(word.learned ? 0.6 : 1.0)
     }
 

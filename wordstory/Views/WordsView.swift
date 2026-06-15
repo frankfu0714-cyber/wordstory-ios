@@ -167,16 +167,69 @@ struct WordsView: View {
     }
 }
 
+/// Flashcard-style row: shows only the word until tapped. Tapping flips the
+/// card to reveal the definition + example. Five minutes after revealing,
+/// the card auto-flips back so the user can keep self-testing. Tapping again
+/// while revealed flips back immediately. Per-row state is in-memory only —
+/// every fresh launch starts with all cards hidden.
 private struct WordRow: View {
     let word: Word
     let onToggleLearned: () -> Void
 
+    @State private var revealed = false
+    @State private var hideTask: Task<Void, Never>?
+
+    private static let autoHideDelay: Duration = .seconds(300)
+
     var body: some View {
+        ZStack {
+            frontFace
+                .opacity(revealed ? 0 : 1)
+                .zIndex(revealed ? 0 : 1)
+            backFace
+                .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+                .opacity(revealed ? 1 : 0)
+                .zIndex(revealed ? 1 : 0)
+        }
+        .rotation3DEffect(.degrees(revealed ? 180 : 0), axis: (x: 0, y: 1, z: 0))
+        .animation(.spring(response: 0.55, dampingFraction: 0.75), value: revealed)
+        .contentShape(Rectangle())
+        .onTapGesture { toggle() }
+        .onDisappear {
+            hideTask?.cancel()
+            hideTask = nil
+        }
+    }
+
+    // MARK: - Faces
+
+    private var frontFace: some View {
+        VStack(spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(word.sourceText)
+                    .font(Theme.serif(24, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                    .strikethrough(word.learned, color: Theme.inkQuiet)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                if word.learned {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green.opacity(0.7))
+                        .font(.system(size: 14))
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 18)
+        .opacity(word.learned ? 0.6 : 1.0)
+    }
+
+    private var backFace: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(word.sourceText)
-                    .font(Theme.serif(20, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
+                    .font(Theme.serif(17, weight: .semibold))
+                    .foregroundStyle(Theme.inkSoft)
                     .strikethrough(word.learned, color: Theme.inkQuiet)
                     .lineLimit(2)
                 Spacer()
@@ -184,14 +237,13 @@ private struct WordRow: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green.opacity(0.7))
                         .font(.system(size: 14))
-                        .onTapGesture { onToggleLearned() }
                 }
             }
             if !word.definition.isEmpty {
                 Text(word.definition)
                     .font(.system(.subheadline))
-                    .foregroundStyle(Theme.inkSoft)
-                    .lineLimit(4)
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(8)
             }
             if !word.example.isEmpty {
                 Text(word.example)
@@ -205,8 +257,27 @@ private struct WordRow: View {
                     }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 4)
         .opacity(word.learned ? 0.6 : 1.0)
+    }
+
+    // MARK: - Flip control
+
+    private func toggle() {
+        if revealed {
+            revealed = false
+            hideTask?.cancel()
+            hideTask = nil
+        } else {
+            revealed = true
+            hideTask?.cancel()
+            hideTask = Task { @MainActor in
+                try? await Task.sleep(for: Self.autoHideDelay)
+                guard !Task.isCancelled else { return }
+                revealed = false
+            }
+        }
     }
 }
 

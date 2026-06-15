@@ -34,6 +34,10 @@ struct WordsView: View {
     @State private var toastMessage: String?
     @FocusState private var addFieldFocused: Bool
 
+    // ---- autocomplete suggestions ----
+    @State private var suggestions: [String] = []
+    @State private var suggestionsTask: Task<Void, Never>?
+
     private var sortedWords: [Word] {
         var list = allWords
         switch sortOrder {
@@ -56,6 +60,13 @@ struct WordsView: View {
                 Theme.background.ignoresSafeArea()
                 VStack(spacing: 0) {
                     typeToAddBar
+                        .onChange(of: addText) { _, newValue in
+                            updateSuggestions(for: newValue)
+                        }
+                    if !suggestions.isEmpty && !addText.isEmpty {
+                        suggestionsList
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                     if allWords.isEmpty {
                         emptyState
                     } else {
@@ -204,6 +215,45 @@ struct WordsView: View {
         .padding(.bottom, 6)
     }
 
+    /// Autocomplete dropdown rendered directly under `typeToAddBar`.
+    /// Bounded to 280pt so a wide prefix match (e.g. "a") doesn't push the
+    /// word list off-screen — the inner `ScrollView` handles overflow.
+    private var suggestionsList: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(suggestions.enumerated()), id: \.element) { index, word in
+                    Button {
+                        selectSuggestion(word)
+                    } label: {
+                        HStack {
+                            Text(word)
+                                .font(Theme.serif(16))
+                                .foregroundStyle(Theme.ink)
+                                .lineLimit(1)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 9)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    if index < suggestions.count - 1 {
+                        Divider().opacity(0.45)
+                    }
+                }
+            }
+        }
+        .frame(maxHeight: 280)
+        .background(Theme.paper)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Theme.rule, lineWidth: 1)
+        )
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
+    }
+
     // MARK: - Empty state
 
     private var emptyState: some View {
@@ -244,9 +294,12 @@ struct WordsView: View {
     /// - Otherwise inserts an empty Word into SwiftData (so the row appears
     ///   immediately at the top), kicks off the definition fetch, and back-
     ///   fills success or marks `definitionFetchFailed = true`.
+    /// `overrideText` lets the autocomplete dropdown submit a specific word
+    /// without round-tripping through the bound `addText` state.
     @MainActor
-    private func submitAdd() async {
-        let trimmed = addText.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func submitAdd(overrideText: String? = nil) async {
+        let raw = overrideText ?? addText
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !isAdding else { return }
 
         // Duplicate check (case-insensitive on the source text).
@@ -284,6 +337,42 @@ struct WordsView: View {
         }
         try? modelContext.save()
         isAdding = false
+    }
+
+    /// Debounce keystrokes by 100ms then query the local dictionary for
+    /// prefix matches. Cancels any in-flight query when called again so
+    /// rapid typing doesn't race.
+    private func updateSuggestions(for text: String) {
+        suggestionsTask?.cancel()
+        let prefix = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if prefix.isEmpty {
+            suggestions = []
+            return
+        }
+        suggestionsTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            guard !Task.isCancelled else { return }
+            let results = await DictionaryService.shared.searchPrefix(prefix, limit: 20)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.18)) {
+                suggestions = results
+            }
+        }
+    }
+
+    /// Tap handler for an autocomplete row — submits that exact word as
+    /// if the user had typed it and hit Enter, then closes the dropdown.
+    private func selectSuggestion(_ word: String) {
+        suggestionsTask?.cancel()
+        suggestionsTask = nil
+        // Hide the dropdown immediately so it doesn't linger during the
+        // async fetch — the submitAdd flow will clear addText on completion
+        // which would also trigger an empty-suggestions onChange, but doing
+        // it eagerly here gives instant visual feedback.
+        withAnimation(.easeInOut(duration: 0.15)) {
+            suggestions = []
+        }
+        Task { @MainActor in await submitAdd(overrideText: word) }
     }
 
     /// Briefly highlight a row (used when typing an already-present word).

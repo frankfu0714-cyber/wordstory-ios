@@ -181,7 +181,9 @@ struct WordsView: View {
             Image(systemName: "plus.circle")
                 .foregroundStyle(Theme.inkQuiet)
                 .font(.system(size: 16))
-            TextField("add_field.placeholder", text: $addText)
+            TextField(direction == .enToZh
+                      ? "add_field.placeholder"
+                      : "add_field.placeholder.zh", text: $addText)
                 .focused($addFieldFocused)
                 .submitLabel(.done)
                 .onSubmit { Task { @MainActor in await submitAdd() } }
@@ -341,7 +343,8 @@ struct WordsView: View {
 
     /// Debounce keystrokes by 100ms then query the local dictionary for
     /// prefix matches. Cancels any in-flight query when called again so
-    /// rapid typing doesn't race.
+    /// rapid typing doesn't race. Routes to the English-headword index in
+    /// `.enToZh` and the zh-term index in `.zhToEn`.
     private func updateSuggestions(for text: String) {
         suggestionsTask?.cancel()
         let prefix = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -349,10 +352,17 @@ struct WordsView: View {
             suggestions = []
             return
         }
+        let dir = direction
         suggestionsTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(100))
             guard !Task.isCancelled else { return }
-            let results = await DictionaryService.shared.searchPrefix(prefix, limit: 20)
+            let results: [String]
+            switch dir {
+            case .enToZh:
+                results = await DictionaryService.shared.searchPrefix(prefix, limit: 20)
+            case .zhToEn:
+                results = await DictionaryService.shared.searchPrefixZh(prefix, limit: 20)
+            }
             guard !Task.isCancelled else { return }
             withAnimation(.easeInOut(duration: 0.18)) {
                 suggestions = results

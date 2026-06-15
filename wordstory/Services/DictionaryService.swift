@@ -2,9 +2,11 @@ import Foundation
 import SQLite3
 
 /// Offline ECDICT lookup. The database lives at `Resources/ecdict.db` in the
-/// app bundle (~40 MB, ~770k English headwords, Traditional Chinese
-/// translations). English-headword indexed only — Chinese → English lookups
-/// return nil and the caller falls through to the online endpoint.
+/// app bundle (~75 MB, ~770k English headwords, Traditional Chinese
+/// translations). Two indexes:
+///   stardict (PRIMARY KEY word)            — en → zh forward lookup
+///   zh_index (PRIMARY KEY zh_term, rank…)  — zh → en reverse lookup, built
+///                                            by tools/build_zh_index.py
 ///
 /// Implemented as an actor so the (read-only) SQLite handle can be shared
 /// across concurrent lookups safely. SQLite's `SQLITE_OPEN_FULLMUTEX` flag
@@ -47,13 +49,23 @@ actor DictionaryService {
 
     /// Look up a word in the local dictionary.
     /// - Returns: `Hit` on match, `nil` on miss (caller falls back to online).
+    ///
+    /// For `.zhToEn` the "translation" returned is the matching English word —
+    /// the model is inverted so callers (flashcard back face) can stay
+    /// direction-agnostic: front = `word`, back = `translation`.
     func lookup(_ word: String, direction: LanguageDirection) -> Hit? {
-        // ECDICT is English-headword indexed; zh-to-en lookups always miss.
-        guard direction == .enToZh else { return nil }
-
         let trimmed = word.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
+        switch direction {
+        case .enToZh:
+            return forwardLookup(trimmed)
+        case .zhToEn:
+            return reverseLookupTop(trimmed)
+        }
+    }
 
+    /// Forward (English → Chinese) lookup against the original `stardict` table.
+    private func forwardLookup(_ trimmed: String) -> Hit? {
         ensureOpen()
         guard let db else { return nil }
 
@@ -76,6 +88,64 @@ actor DictionaryService {
             let translation = sqlite3_column_text(stmt, 2).flatMap { String(cString: $0) } ?? ""
             guard !translation.isEmpty else { return nil }
             return Hit(word: wordText, phonetic: phonetic, translation: translation)
+        }
+    }
+
+    /// Reverse (Chinese → English) lookup. Returns the best single English
+    /// headword whose translation contains `chinese`, or nil on miss.
+    /// `reverseLookup(_:limit:)` is the multi-result variant.
+    private func reverseLookupTop(_ chinese: String) -> Hit? {
+        reverseLookup(chinese, limit: 1).first
+    }
+
+    /// Reverse-lookup: return up to `limit` English headwords whose translation
+    /// includes the given Chinese term. Ordered by:
+    ///   1. `rank` ascending      — primary gloss first
+    ///   2. has-space ascending   — single-word answers before phrases
+    ///   3. `LENGTH(en_word)` ASC — shorter answers first (cat < felis catus)
+    ///   4. alphabetical NOCASE
+    ///
+    /// The ordering is a heuristic, not a frequency model — ECDICT doesn't
+    /// expose word frequency. It picks `貓 → cat` correctly; for highly
+    /// polysemous terms the user sees the top entry but can scroll the list.
+    func reverseLookup(_ chinese: String, limit: Int) -> [Hit] {
+        let trimmed = chinese.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        ensureOpen()
+        guard let db else { return [] }
+
+        let sql = """
+            SELECT en_word
+            FROM zh_index
+            WHERE zh_term = ? COLLATE NOCASE
+            ORDER BY
+                rank ASC,
+                (en_word LIKE '% %') ASC,
+                LENGTH(en_word) ASC,
+                en_word COLLATE NOCASE ASC
+            LIMIT ?
+            """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            print("[Dictionary] reverse prepare failed: \(String(cString: sqlite3_errmsg(db)))")
+            return []
+        }
+        defer { sqlite3_finalize(stmt) }
+
+        return trimmed.withCString { ptr -> [Hit] in
+            sqlite3_bind_text(stmt, 1, ptr, -1, nil)
+            sqlite3_bind_int(stmt, 2, Int32(max(1, limit)))
+            var out: [Hit] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let cstr = sqlite3_column_text(stmt, 0) {
+                    let en = String(cString: cstr)
+                    // For the inverted model: word = the queried Chinese term,
+                    // translation = the English headword. Phonetic stays nil
+                    // (we don't index Chinese phonetics).
+                    out.append(Hit(word: trimmed, phonetic: nil, translation: en))
+                }
+            }
+            return out
         }
     }
 
@@ -121,6 +191,55 @@ actor DictionaryService {
                 // Only log when we're approaching the 10ms target the user
                 // specified — keeps the console quiet on normal queries.
                 print(String(format: "[Dictionary] slow prefix '%@%%': %d rows in %.1fms",
+                             trimmed, out.count, elapsedMs))
+            }
+            return out
+        }
+    }
+
+    /// Prefix search for Chinese terms — the zh-to-en autocomplete path.
+    /// Returns distinct Chinese terms starting with `prefix`, alphabetically.
+    func searchPrefixZh(_ prefix: String, limit: Int) -> [String] {
+        let trimmed = prefix.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        ensureOpen()
+        guard let db else { return [] }
+
+        // Escape LIKE wildcards in the user input.
+        let escaped = trimmed
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
+        let pattern = escaped + "%"
+
+        let sql = """
+            SELECT DISTINCT zh_term
+            FROM zh_index
+            WHERE zh_term LIKE ? ESCAPE '\\' COLLATE NOCASE
+            ORDER BY LENGTH(zh_term), zh_term
+            LIMIT ?
+            """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            print("[Dictionary] zh prefix prepare failed: \(String(cString: sqlite3_errmsg(db)))")
+            return []
+        }
+        defer { sqlite3_finalize(stmt) }
+
+        let start = CFAbsoluteTimeGetCurrent()
+        return pattern.withCString { ptr -> [String] in
+            sqlite3_bind_text(stmt, 1, ptr, -1, nil)
+            sqlite3_bind_int(stmt, 2, Int32(max(1, limit)))
+            var out: [String] = []
+            out.reserveCapacity(limit)
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let cstr = sqlite3_column_text(stmt, 0) {
+                    out.append(String(cString: cstr))
+                }
+            }
+            let elapsedMs = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            if elapsedMs > 20 {
+                print(String(format: "[Dictionary] slow zh prefix '%@%%': %d rows in %.1fms",
                              trimmed, out.count, elapsedMs))
             }
             return out

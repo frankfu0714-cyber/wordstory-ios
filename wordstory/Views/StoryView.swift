@@ -78,6 +78,9 @@ struct StoryView: View {
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 12)
+                #if DEBUG
+                .onAppear { hydrateSeedDemoStoryIfNeeded() }
+                #endif
                 // Generous bottom padding so the Regenerate button can scroll
                 // clear of the translucent tab bar even on shorter devices.
                 .padding(.bottom, 100)
@@ -583,6 +586,24 @@ struct StoryView: View {
             }
         }
     }
+
+    #if DEBUG
+    /// Hydrate the demo story written by `SeedDemo` so screenshots 4 + 5 can
+    /// render without a live Gemini call.
+    private func hydrateSeedDemoStoryIfNeeded() {
+        guard SeedDemo.isActive, generated == nil else { return }
+        guard let data = UserDefaults.standard.data(forKey: "seedDemo.story"),
+              let resp = try? JSONDecoder().decode(APIService.GenerateResponse.self, from: data)
+        else { return }
+        let vocabKeys = UserDefaults.standard.stringArray(forKey: "seedDemo.storyVocab") ?? []
+        let vocab = vocabKeys.compactMap { key in
+            allWords.first { $0.sourceText == key }
+        }
+        generated = resp
+        generatedFor = vocab
+        selectedIDs = Set(vocab.map(\.id))
+    }
+    #endif
 
     // MARK: - Generation
 

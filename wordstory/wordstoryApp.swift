@@ -14,6 +14,9 @@ struct WordstoryApp: App {
             ContentView()
                 .environment(\.locale, currentLocale)
                 .tint(Color.accentColor)
+                #if DEBUG
+                .modelContext_seedDemoIfNeeded()
+                #endif
         }
         .modelContainer(for: [Word.self, SavedStory.self])
     }
@@ -26,3 +29,25 @@ struct WordstoryApp: App {
         }
     }
 }
+
+#if DEBUG
+private extension View {
+    /// Hook for `SeedDemo.seed(_:)`. Runs once on first appear when the
+    /// `--seedDemo` launch arg is present; no-op in production builds.
+    func modelContext_seedDemoIfNeeded() -> some View {
+        modifier(SeedDemoModifier())
+    }
+}
+
+private struct SeedDemoModifier: ViewModifier {
+    @Environment(\.modelContext) private var ctx
+    @State private var didSeed = false
+    func body(content: Content) -> some View {
+        content.onAppear {
+            guard SeedDemo.isActive, !didSeed else { return }
+            didSeed = true
+            SeedDemo.seed(into: ctx)
+        }
+    }
+}
+#endif

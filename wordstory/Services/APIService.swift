@@ -78,7 +78,7 @@ struct APIService {
         let direction: String
     }
 
-    struct GenerateResponse: Decodable {
+    struct GenerateResponse: Codable {
         /// English + Chinese sentence pairs. Empty when the server couldn't
         /// extract them (truncated response, very old server, etc.) — clients
         /// fall back to the flat story_en / story_zh fields in that case.

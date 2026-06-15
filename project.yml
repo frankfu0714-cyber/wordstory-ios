@@ -45,3 +45,16 @@ targets:
         INFOPLIST_KEY_CFBundleLocalizations: "en zh-Hant"
         INFOPLIST_KEY_CFBundleDevelopmentRegion: en
         SWIFT_EMIT_LOC_STRINGS: YES
+
+  wordstoryUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources: wordstoryUITests
+    dependencies:
+      - target: wordstory
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.frankfu.wordstoryUITests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: wordstory

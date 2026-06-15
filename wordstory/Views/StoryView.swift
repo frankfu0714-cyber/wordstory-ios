@@ -52,20 +52,9 @@ struct StoryView: View {
     @State private var errorMessage: String?
 
     @State private var tappedWord: Word?
-    /// Which of the two language versions of the story is currently visible.
-    /// Defaults to the target language (the one with the vocab) on generation.
-    @State private var displayLang: StoryLang = .en
-
-    enum StoryLang: String, CaseIterable, Identifiable {
-        case en, zh
-        var id: String { rawValue }
-        var label: String {
-            switch self {
-            case .en: return "EN"
-            case .zh: return "中"
-            }
-        }
-    }
+    /// When true, each English sentence has its Chinese translation rendered
+    /// directly below it. When false, only the English story shows.
+    @State private var showChinese: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -291,35 +280,41 @@ struct StoryView: View {
     // MARK: - Story output
 
     private func storyOutput(generated: APIService.GenerateResponse) -> some View {
-        let activeText = displayLang == .en ? generated.story_en : generated.story_zh
-        return VStack(alignment: .leading, spacing: 14) {
-            // EN / 中 toggle. The vocabulary words are highlighted only in the
-            // English version — the Chinese rendering is a plain reading
-            // reference (the simplified shipping path; CJK word-boundary
-            // matching for highlights would need its own pass).
+        VStack(alignment: .leading, spacing: 14) {
+            // Show / Hide Chinese button. When sentences[] is present, the
+            // Chinese line interleaves directly under each English sentence.
+            // When it's missing (older / truncated responses), we fall back
+            // to rendering the two flat story_* strings as separate blocks.
             HStack {
-                Picker("language", selection: $displayLang) {
-                    ForEach(StoryLang.allCases) { lang in
-                        Text(lang.label).tag(lang)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        showChinese.toggle()
                     }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: showChinese ? "eye.slash.fill" : "eye.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text(showChinese ? "story.hide_chinese" : "story.show_chinese")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundStyle(showChinese ? Color.white : Color.accentColor)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule().fill(showChinese ? Color.accentColor : Color.accentColor.opacity(0.10))
+                    )
+                    .overlay(
+                        Capsule().stroke(Color.accentColor.opacity(0.35), lineWidth: 1)
+                    )
                 }
-                .pickerStyle(.segmented)
-                .frame(maxWidth: 140)
+                .buttonStyle(.plain)
                 Spacer()
             }
 
-            if displayLang == .en {
-                Text(makeAttributedStory(text: activeText, words: generatedFor))
-                    .font(Theme.serif(18))
-                    .lineSpacing(8)
-                    .foregroundStyle(Theme.ink)
-                    .textSelection(.enabled)
+            if let sentences = generated.sentences, !sentences.isEmpty {
+                interleavedSentences(sentences)
             } else {
-                Text(activeText)
-                    .font(Theme.serif(18))
-                    .lineSpacing(8)
-                    .foregroundStyle(Theme.ink)
-                    .textSelection(.enabled)
+                fallbackBlocks(generated: generated)
             }
 
             HStack {
@@ -343,6 +338,114 @@ struct StoryView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Theme.rule, lineWidth: 1)
         )
+    }
+
+    /// Primary path: each sentence is its own block — English on top, optional
+    /// Chinese translation directly below. Both sides get vocab highlighting
+    /// using the same UUID-link scheme so taps open the same detail modal.
+    private func interleavedSentences(_ sentences: [APIService.GenerateResponse.SentencePair]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(sentences.enumerated()), id: \.offset) { _, pair in
+                VStack(alignment: .leading, spacing: showChinese ? 3 : 0) {
+                    Text(makeAttributedStory(text: pair.en, words: generatedFor))
+                        .font(Theme.serif(18))
+                        .lineSpacing(6)
+                        .foregroundStyle(Theme.ink)
+                        .textSelection(.enabled)
+                    if showChinese {
+                        Text(makeChineseAttributed(text: pair.zh, words: generatedFor))
+                            .font(.system(size: 14))
+                            .lineSpacing(3)
+                            .foregroundStyle(Theme.inkSoft)
+                            .textSelection(.enabled)
+                            .accessibilityLabel(Text(String(localized: "story.aria.chinese_for \(pair.en)")))
+                    }
+                }
+            }
+        }
+    }
+
+    /// Fallback when sentences[] is missing — old API responses or truncation.
+    /// Same English-on-top semantics; the Chinese version goes below as a
+    /// single block instead of being interleaved sentence-by-sentence.
+    private func fallbackBlocks(generated: APIService.GenerateResponse) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(makeAttributedStory(text: generated.story_en, words: generatedFor))
+                .font(Theme.serif(18))
+                .lineSpacing(8)
+                .foregroundStyle(Theme.ink)
+                .textSelection(.enabled)
+            if showChinese, !generated.story_zh.isEmpty {
+                Text(makeChineseAttributed(text: generated.story_zh, words: generatedFor))
+                    .font(.system(size: 14))
+                    .lineSpacing(5)
+                    .foregroundStyle(Theme.inkSoft)
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
+    // MARK: - Chinese highlight
+
+    /// Highlight Chinese vocab translations as substrings of `text`.
+    /// Candidates come from `word.definition` — the Chinese gloss text — after
+    /// stripping part-of-speech / domain prefixes (n., vt., [計], etc.) and
+    /// splitting on common delimiters. Longest candidates win when overlapping.
+    /// Each highlight gets the same `wordstory://word/<UUID>` link attr as the
+    /// English version, so taps route through the existing OpenURLAction.
+    private func makeChineseAttributed(text: String, words: [Word]) -> AttributedString {
+        var attr = AttributedString(text)
+        let nsText = text as NSString
+        // Build (candidate, word) tuples, sorted longest-first so a
+        // multi-character match wins over a single shared char.
+        var lookups: [(candidate: String, word: Word)] = []
+        for word in words {
+            for cand in chineseCandidates(for: word) {
+                lookups.append((cand, word))
+            }
+        }
+        lookups.sort { $0.candidate.count > $1.candidate.count }
+        var covered: [NSRange] = []
+        for (cand, word) in lookups {
+            let escaped = NSRegularExpression.escapedPattern(for: cand)
+            guard let regex = try? NSRegularExpression(pattern: escaped) else { continue }
+            let matches = regex.matches(in: text, range: NSRange(location: 0, length: nsText.length))
+            for match in matches {
+                if covered.contains(where: { NSIntersectionRange($0, match.range).length > 0 }) { continue }
+                covered.append(match.range)
+                guard let range = Range<AttributedString.Index>(match.range, in: attr) else { continue }
+                attr[range].foregroundColor = .accentColor
+                attr[range].underlineStyle = .single
+                attr[range].link = URL(string: "wordstory://word/\(word.id.uuidString)")
+            }
+        }
+        return attr
+    }
+
+    /// Pull short Chinese segments out of a word's ECDICT/Gemini definition.
+    /// Strips POS markers, splits on common delimiters, drops segments longer
+    /// than 8 chars (those rarely appear verbatim in narrative prose).
+    private func chineseCandidates(for word: Word) -> [String] {
+        let posPrefixPattern = #"^(?:[a-zA-Z]+\.|\[[^\]]+\])\s*"#
+        var out: Set<String> = []
+        for line in word.definition.components(separatedBy: "\n") {
+            let stripped = line.replacingOccurrences(
+                of: posPrefixPattern,
+                with: "",
+                options: .regularExpression
+            )
+            let delim = CharacterSet(charactersIn: ",;、，；/／")
+            for raw in stripped.components(separatedBy: delim) {
+                let s = raw.trimmingCharacters(in: .whitespaces)
+                // Keep only short, CJK-bearing segments. 1–8 chars covers
+                // most single-character translations and 2–4 char idioms;
+                // longer segments are almost always explanatory phrases
+                // that won't appear verbatim in narrative.
+                guard (1...8).contains(s.count), containsCJK(s) else { continue }
+                out.insert(s)
+            }
+        }
+        return Array(out)
     }
 
     private func sectionLabel(_ key: LocalizedStringKey) -> some View {
@@ -421,10 +524,10 @@ struct StoryView: View {
             )
             generated = response
             generatedFor = vocab
-            // Default the visible language to the target side (the one with
-            // the vocab woven in). For en-to-zh that's English; for zh-to-en
-            // it's Chinese.
-            displayLang = (dir == .enToZh) ? .en : .zh
+            // Default: English shown, Chinese hidden. The user reveals
+            // sentence-level Chinese via the toggle when they want to
+            // verify their understanding.
+            showChinese = false
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription
                 ?? String(localized: "error.generic")

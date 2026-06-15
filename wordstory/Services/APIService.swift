@@ -79,10 +79,20 @@ struct APIService {
     }
 
     struct GenerateResponse: Decodable {
-        /// English version of the generated piece.
+        /// English + Chinese sentence pairs. Empty when the server couldn't
+        /// extract them (truncated response, very old server, etc.) — clients
+        /// fall back to the flat story_en / story_zh fields in that case.
+        let sentences: [SentencePair]?
+        /// Full English version of the generated piece (concatenated for
+        /// convenience and as the fallback when `sentences` is missing).
         let story_en: String
-        /// Traditional Chinese version of the same piece.
+        /// Full Traditional Chinese version of the same piece.
         let story_zh: String
+
+        struct SentencePair: Decodable, Hashable {
+            let en: String
+            let zh: String
+        }
     }
 
     /// Calls `/api/generate` with a list of words and a style.

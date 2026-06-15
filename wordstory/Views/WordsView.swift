@@ -476,7 +476,8 @@ private struct WordRow: View {
     @State private var hideTask: Task<Void, Never>?
     @State private var isRetrying = false
 
-    private static let autoHideDelay: Duration = .seconds(300)
+    private static let autoHideDelay: Duration = .seconds(5)
+    private static let flipAnimation: Animation = .easeInOut(duration: 0.55)
 
     var body: some View {
         ZStack {
@@ -488,15 +489,17 @@ private struct WordRow: View {
                 .opacity(revealed ? 1 : 0)
                 .zIndex(revealed ? 1 : 0)
         }
-        // perspective: 0.5 introduces depth so the rotation reads as a real
-        // flip rather than a 2D opacity swap. Without it the card looks
-        // squashed against the plane of the screen.
+        // perspective: 0.6 introduces depth so the rotation reads as a real
+        // flip with foreshortening, not a 2D opacity swap.
+        // Animation is driven explicitly by withAnimation in toggle(); the
+        // implicit `.animation(_:value:)` modifier was being suppressed by
+        // the parent List's row animation orchestration, which is why
+        // Frank saw an instant face swap instead of a rotation.
         .rotation3DEffect(
             .degrees(revealed ? 180 : 0),
             axis: (x: 0, y: 1, z: 0),
-            perspective: 0.5
+            perspective: 0.6
         )
-        .animation(.spring(response: 0.55, dampingFraction: 0.75), value: revealed)
         .contentShape(Rectangle())
         // Subtle yellow flash when the user types a word that's already in
         // the list — see WordsView.flash(_:).
@@ -655,17 +658,21 @@ private struct WordRow: View {
     // MARK: - Flip control
 
     private func toggle() {
+        // Explicit withAnimation — implicit `.animation(_:value:)` modifiers
+        // on List row content are dropped by SwiftUI's row-level animation
+        // orchestration, so the rotation never interpolates unless we wrap
+        // the state change in an explicit transaction.
         if revealed {
-            revealed = false
+            withAnimation(Self.flipAnimation) { revealed = false }
             hideTask?.cancel()
             hideTask = nil
         } else {
-            revealed = true
+            withAnimation(Self.flipAnimation) { revealed = true }
             hideTask?.cancel()
             hideTask = Task { @MainActor in
                 try? await Task.sleep(for: Self.autoHideDelay)
                 guard !Task.isCancelled else { return }
-                revealed = false
+                withAnimation(Self.flipAnimation) { revealed = false }
             }
         }
     }

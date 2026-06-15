@@ -500,6 +500,12 @@ private struct WordRow: View {
             axis: (x: 0, y: 1, z: 0),
             perspective: 0.6
         )
+        // Implicit + explicit animation belt-and-suspenders. The implicit
+        // modifier here drives the rotation + opacity in lockstep when
+        // SwiftUI honours it; `withAnimation` in toggle() forces the same
+        // curve as a fallback for contexts (like inside a List) where the
+        // implicit modifier can be suppressed by parent row orchestration.
+        .animation(Self.flipAnimation, value: revealed)
         .contentShape(Rectangle())
         // Subtle yellow flash when the user types a word that's already in
         // the list — see WordsView.flash(_:).

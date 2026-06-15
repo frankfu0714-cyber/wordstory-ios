@@ -25,13 +25,15 @@ struct SettingsSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("settings.language.label") {
+                Section {
                     Picker("settings.language.label", selection: $uiLanguage) {
                         Text("settings.language.system").tag("")
                         Text("English").tag("en")
                         Text("繁體中文").tag("zh")
                     }
                     .pickerStyle(.menu)
+                } header: {
+                    Text("settings.language.label")
                 } footer: {
                     Text("settings.language.hint")
                         .font(.caption)
@@ -39,7 +41,7 @@ struct SettingsSheet: View {
                 }
                 .listRowBackground(Theme.paper)
 
-                Section("settings.direction.label") {
+                Section {
                     Button {
                         directionRaw = direction.flipped.rawValue
                     } label: {
@@ -53,13 +55,15 @@ struct SettingsSheet: View {
                                 .fontWeight(.medium)
                             Image(systemName: "arrow.left.arrow.right")
                                 .font(.caption)
-                                .foregroundStyle(.accentColor)
+                                .foregroundStyle(Color.accentColor)
                             Text(direction.nativeDisplayName)
                                 .foregroundStyle(Theme.inkSoft)
                                 .font(.subheadline)
                         }
                     }
                     .buttonStyle(.plain)
+                } header: {
+                    Text("settings.direction.label")
                 } footer: {
                     Text("settings.direction.hint")
                         .font(.caption)

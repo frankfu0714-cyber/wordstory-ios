@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Shown when the user taps a highlighted word in a generated story.
 struct WordDetailModal: View {
@@ -46,18 +47,10 @@ struct WordDetailModal: View {
 }
 
 #Preview {
-    let container = try! ModelContainer(
-        for: Word.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
-    let ctx = ModelContext(container)
-    let w = Word(
+    WordDetailModal(word: Word(
         sourceText: "serendipity",
         definition: "偶然發現美好事物的能力或機運。常用於描述意外卻幸運的相遇或發現。",
         example: "Their meeting was pure serendipity — neither expected the other on that train.",
         direction: .enToZh
-    )
-    ctx.insert(w)
-    return WordDetailModal(word: w)
-        .modelContainer(container)
+    ))
 }

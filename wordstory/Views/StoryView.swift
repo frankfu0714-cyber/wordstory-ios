@@ -342,7 +342,6 @@ struct StoryView: View {
                 guard let range = Range<AttributedString.Index>(match.range, in: attr) else { continue }
                 attr[range].foregroundColor = .accentColor
                 attr[range].underlineStyle = .single
-                attr[range].underlineColor = Color.accentColor.opacity(0.55)
                 attr[range].link = URL(string: "wordstory://word/\(word.id.uuidString)")
             }
         }
@@ -390,10 +389,6 @@ struct StoryView: View {
 }
 
 #Preview {
-    let container = try! ModelContainer(
-        for: Word.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
-    return StoryView(showSettings: .constant(false))
-        .modelContainer(container)
+    StoryView(showSettings: .constant(false))
+        .modelContainer(for: Word.self, inMemory: true)
 }

@@ -34,7 +34,7 @@ struct AddWordSheet: View {
                             .font(.subheadline)
                             .foregroundStyle(Theme.ink)
                         Text("→")
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                         Text(direction.nativeDisplayName)
                             .font(.subheadline)
                             .foregroundStyle(Theme.inkSoft)

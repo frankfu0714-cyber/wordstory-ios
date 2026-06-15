@@ -76,7 +76,7 @@ struct WordsView: View {
                                             systemImage: word.learned ? "circle" : "checkmark.circle"
                                         )
                                     }
-                                    .tint(.accentColor)
+                                    .tint(Color.accentColor)
                                 }
                         }
                     }
@@ -211,18 +211,6 @@ private struct WordRow: View {
 }
 
 #Preview {
-    let container = try! ModelContainer(for: Word.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    let ctx = ModelContext(container)
-    ctx.insert(Word(sourceText: "serendipity",
-                    definition: "偶然發現美好事物的能力或機運。",
-                    example: "Their meeting was pure serendipity.",
-                    direction: .enToZh))
-    ctx.insert(Word(sourceText: "ephemeral",
-                    definition: "短暫的、稍縱即逝的。",
-                    example: "The cherry blossoms are ephemeral.",
-                    learned: true,
-                    direction: .enToZh))
-    try? ctx.save()
-    return WordsView(showSettings: .constant(false))
-        .modelContainer(container)
+    WordsView(showSettings: .constant(false))
+        .modelContainer(for: Word.self, inMemory: true)
 }

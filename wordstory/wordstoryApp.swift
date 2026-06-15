@@ -13,7 +13,7 @@ struct WordstoryApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.locale, currentLocale)
-                .tint(.accentColor)
+                .tint(Color.accentColor)
         }
         .modelContainer(for: Word.self)
     }

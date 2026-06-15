@@ -1,0 +1,28 @@
+# Xcode build artifacts
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+xcshareddata/
+
+# Generated Xcode project — re-run xcodegen to recreate
+*.xcodeproj
+*.xcworkspace
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods (we don't use it, but defensive)
+Pods/
+*.podspec.lock
+
+# macOS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Frank's local secrets, never commit
+.env
+.env.local

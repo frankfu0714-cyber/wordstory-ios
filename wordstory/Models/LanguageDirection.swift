@@ -40,4 +40,23 @@ enum LanguageDirection: String, CaseIterable, Codable, Identifiable {
         case .zhToEn: return "zh-TW"
         }
     }
+
+    /// Detect the appropriate direction from the input text itself, ignoring
+    /// the user's global setting. Lets the add-bar autocomplete + submit
+    /// flow handle mixed-language input without forcing the user into
+    /// Settings to flip direction.
+    ///
+    /// Heuristic: >50% of non-whitespace characters in the CJK Unified
+    /// Ideographs block → zh-to-en; otherwise en-to-zh. Empty input falls
+    /// back to en-to-zh (the most common case).
+    static func detect(for text: String) -> LanguageDirection {
+        let nonWS = text.unicodeScalars.filter { !$0.properties.isWhitespace }
+        guard !nonWS.isEmpty else { return .enToZh }
+        // 0x4E00…0x9FFF is the CJK Unified Ideographs block — covers the
+        // overwhelming majority of Han characters the user will type. We
+        // intentionally don't include CJK Extensions A–F (the dictionary
+        // doesn't index them) or Bopomofo/Kana (out of scope).
+        let cjk = nonWS.filter { (0x4E00...0x9FFF).contains(Int($0.value)) }.count
+        return Double(cjk) / Double(nonWS.count) > 0.5 ? .zhToEn : .enToZh
+    }
 }

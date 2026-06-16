@@ -181,9 +181,7 @@ struct WordsView: View {
             Image(systemName: "plus.circle")
                 .foregroundStyle(Theme.inkQuiet)
                 .font(.system(size: 16))
-            TextField(direction == .enToZh
-                      ? "add_field.placeholder"
-                      : "add_field.placeholder.zh", text: $addText)
+            TextField("add_field.placeholder", text: $addText)
                 .focused($addFieldFocused)
                 .submitLabel(.done)
                 .onSubmit { Task { @MainActor in await submitAdd() } }
@@ -314,22 +312,37 @@ struct WordsView: View {
             return
         }
 
+        // Per-word direction is derived from the *input* — typing `貓` should
+        // produce a zh-to-en card regardless of the user's global setting,
+        // so the back face shows `cat` rather than re-asking the server in
+        // the wrong direction.
+        let dir = LanguageDirection.detect(for: trimmed)
         isAdding = true
-        let word = Word(sourceText: trimmed, direction: direction)
+        let word = Word(sourceText: trimmed, direction: dir)
         modelContext.insert(word)
         try? modelContext.save()
         let id = word.id
-        let dir = direction
         addText = ""
         // Hand focus back so the user can keep typing rapid-fire if they want.
         addFieldFocused = true
 
         do {
             let resp = try await APIService.defineWord(trimmed, direction: dir)
+            // Belt-and-suspenders: if the response came back empty or just
+            // echoed the source text (which can happen when both the local
+            // dictionary misses and the server returns a degenerate
+            // payload), treat it as a fetch failure so the row shows the
+            // retry control rather than a "貓 → 貓" non-answer.
+            let cleaned = resp.definition.trimmingCharacters(in: .whitespacesAndNewlines)
+            let isEcho = cleaned.compare(trimmed, options: .caseInsensitive) == .orderedSame
             if let w = findWord(byID: id) {
-                w.definition = resp.definition
-                w.example = resp.example
-                w.definitionFetchFailed = false
+                if cleaned.isEmpty || isEcho {
+                    w.definitionFetchFailed = true
+                } else {
+                    w.definition = resp.definition
+                    w.example = resp.example
+                    w.definitionFetchFailed = false
+                }
             }
         } catch {
             print("[WordsView] type-to-add '\(trimmed)' failed: \(error.localizedDescription)")
@@ -343,8 +356,10 @@ struct WordsView: View {
 
     /// Debounce keystrokes by 100ms then query the local dictionary for
     /// prefix matches. Cancels any in-flight query when called again so
-    /// rapid typing doesn't race. Routes to the English-headword index in
-    /// `.enToZh` and the zh-term index in `.zhToEn`.
+    /// rapid typing doesn't race. Routes by the *input language* (auto-
+    /// detected from CJK ratio), not the global direction setting — so
+    /// typing `貓` in the default en-to-zh mode still surfaces reverse-
+    /// lookup suggestions like `cat`.
     private func updateSuggestions(for text: String) {
         suggestionsTask?.cancel()
         let prefix = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -352,7 +367,7 @@ struct WordsView: View {
             suggestions = []
             return
         }
-        let dir = direction
+        let dir = LanguageDirection.detect(for: prefix)
         suggestionsTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(100))
             guard !Task.isCancelled else { return }

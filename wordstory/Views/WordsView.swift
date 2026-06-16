@@ -25,7 +25,6 @@ struct WordsView: View {
     @Environment(\.locale) private var locale
 
     @State private var sortOrder: WordSortOrder = .recent
-    @State private var showAddSheet = false
 
     // ---- type-to-add bar state ----
     @State private var addText = ""
@@ -169,17 +168,6 @@ struct WordsView: View {
                     }
                     .accessibilityLabel(Text("sort.title"))
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showAddSheet = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel(Text("action.add_word"))
-                }
-            }
-            .sheet(isPresented: $showAddSheet) {
-                AddWordSheet()
             }
             .sheet(item: $synonymsContext) { ctx in
                 EnglishSynonymsSheet(chinese: ctx.chinese) { englishWord in

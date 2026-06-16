@@ -10,6 +10,9 @@ struct SavedStoriesView: View {
     /// nav title in sync with same-session Settings switches.
     @Environment(\.locale) private var locale
 
+    /// Drives the title-edit sheet via `.sheet(item:)`. nil = sheet closed.
+    @State private var editingStory: SavedStory?
+
     /// In-progress generations sort to the top so the user sees them while
     /// the background Task is still running; everything else falls back to
     /// reverse-chron.
@@ -42,6 +45,20 @@ struct SavedStoriesView: View {
                                     Label("action.delete", systemImage: "trash")
                                 }
                             }
+                            // Leading swipe → rename. Gated on completed
+                            // stories: generating + failed rows don't have
+                            // any content to title yet, and the same
+                            // gating is mirrored on the detail-view pencil.
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                if !story.isGenerating && !story.generationFailed {
+                                    Button {
+                                        editingStory = story
+                                    } label: {
+                                        Label("saved.swipe.edit", systemImage: "pencil")
+                                    }
+                                    .tint(.blue)
+                                }
+                            }
                         }
                     }
                     .scrollContentBackground(.hidden)
@@ -50,6 +67,9 @@ struct SavedStoriesView: View {
             }
             .navigationTitle(String(localized: "saved.tab", locale: locale))
             .navigationBarTitleDisplayMode(.large)
+            .sheet(item: $editingStory) { story in
+                TitleEditSheet(story: story)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {

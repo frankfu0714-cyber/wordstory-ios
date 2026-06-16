@@ -394,7 +394,11 @@ struct StoryView: View {
                         .foregroundStyle(Theme.ink)
                         .textSelection(.enabled)
                     if showChinese {
-                        Text(makeChineseAttributed(text: pair.zh, words: generatedFor))
+                        Text(makeChineseAttributed(
+                            text: pair.zh,
+                            words: generatedFor,
+                            spans: pair.vocab_spans
+                        ))
                             .font(.system(size: 14))
                             .lineSpacing(3)
                             .foregroundStyle(Theme.inkSoft)
@@ -429,20 +433,36 @@ struct StoryView: View {
     // MARK: - Chinese highlight
 
     /// Highlight Chinese vocab translations as substrings of `text`.
-    /// Candidates come from `word.definition` — the Chinese gloss text — after
-    /// stripping part-of-speech / domain prefixes (n., vt., [計], etc.) and
-    /// splitting on common delimiters. Longest candidates win when overlapping.
-    /// Each highlight gets the same `wordstory://word/<UUID>` link attr as the
-    /// English version, so taps route through the existing OpenURLAction.
-    private func makeChineseAttributed(text: String, words: [Word]) -> AttributedString {
+    /// Prefers Gemini's per-sentence `vocab_spans` entry when present — that's
+    /// the exact Chinese substring in this sentence's translation, so we
+    /// don't risk highlighting unrelated dictionary candidates that happen to
+    /// share characters. Falls back to dictionary-derived candidates (POS
+    /// stripped, split on delimiters) when a span is missing. Longest
+    /// candidates win when overlapping. Each highlight gets the same
+    /// `wordstory://word/<UUID>` link attr as the English version, so taps
+    /// route through the existing OpenURLAction.
+    private func makeChineseAttributed(
+        text: String,
+        words: [Word],
+        spans: [String: String]? = nil
+    ) -> AttributedString {
         var attr = AttributedString(text)
         let nsText = text as NSString
         // Build (candidate, word) tuples, sorted longest-first so a
         // multi-character match wins over a single shared char.
         var lookups: [(candidate: String, word: Word)] = []
         for word in words {
-            for cand in chineseCandidates(for: word) {
-                lookups.append((cand, word))
+            let key = word.sourceText.trimmingCharacters(in: .whitespaces).lowercased()
+            if let span = spans?[key],
+               !span.trimmingCharacters(in: .whitespaces).isEmpty {
+                // Trust Gemini's exact span — don't pile on dictionary
+                // candidates for this word so we avoid double-highlighting
+                // a near-synonym elsewhere in the same sentence.
+                lookups.append((span, word))
+            } else {
+                for cand in chineseCandidates(for: word) {
+                    lookups.append((cand, word))
+                }
             }
         }
         lookups.sort { $0.candidate.count > $1.candidate.count }

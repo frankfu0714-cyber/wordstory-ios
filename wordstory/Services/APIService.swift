@@ -92,6 +92,20 @@ struct APIService {
         struct SentencePair: Codable, Hashable {
             let en: String
             let zh: String
+            /// Per-sentence map from vocabulary word (lowercased) to the exact
+            /// Chinese substring in `zh` that translates it. Optional so
+            /// pre-vocab_spans saved stories still decode, and so synthetic
+            /// client-side-split pairs (when `sentences[]` is missing from a
+            /// response) can omit it. Callers prefer this for highlighting
+            /// and fall back to dictionary-candidate substring search when
+            /// nil or missing a given vocab key.
+            let vocab_spans: [String: String]?
+
+            init(en: String, zh: String, vocab_spans: [String: String]? = nil) {
+                self.en = en
+                self.zh = zh
+                self.vocab_spans = vocab_spans
+            }
         }
     }
 

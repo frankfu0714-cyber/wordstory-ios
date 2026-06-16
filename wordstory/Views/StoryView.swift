@@ -44,6 +44,14 @@ struct StoryView: View {
     @Binding var showSettings: Bool
     @Query private var allWords: [Word]
     @Environment(\.modelContext) private var modelContext
+    /// Read from `\.locale` so the nav title resolves against the user's
+    /// choice without waiting for a relaunch. `WordstoryApp` installs the
+    /// env locale from the `uiLanguage` AppStorage; LocalizedStringKey-based
+    /// Text views pick it up directly, but `navigationTitle` on iOS 17/18
+    /// bridges through UIKit and intermittently keeps the bundle-locale
+    /// title. Resolving the title via the explicit Locale dodges that.
+    @Environment(\.locale) private var locale
+
     // App is English-learner only as of this release; the user-facing
     // direction toggle is gone and every generation is en-to-zh. Per-Word
     // `direction` storage is preserved so legacy zh-to-en cards still
@@ -75,7 +83,7 @@ struct StoryView: View {
             }
             .background(Theme.background)
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("tab.story")
+            .navigationTitle(String(localized: "tab.story", locale: locale))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -202,10 +210,15 @@ struct StoryView: View {
             style = s
         } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(String(localized: s.titleKey))
+                // LocalizedStringKey respects the SwiftUI `\.locale` env that
+                // WordstoryApp installs from the user's uiLanguage preference;
+                // String(localized:) reads Bundle.main, which only updates on
+                // next launch, so picking 中文 in Settings used to leave these
+                // cards in English until relaunch.
+                Text(LocalizedStringKey(s.titleKeyString))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Theme.ink)
-                Text(String(localized: s.descriptionKey))
+                Text(LocalizedStringKey(s.descriptionKeyString))
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.inkSoft)
                     .lineLimit(2)

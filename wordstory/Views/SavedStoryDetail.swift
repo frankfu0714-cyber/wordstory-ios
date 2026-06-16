@@ -217,7 +217,7 @@ struct SavedStoryDetail: View {
 
     private var metaHeader: some View {
         HStack(spacing: 8) {
-            Text(String(localized: story.style.titleKey))
+            Text(LocalizedStringKey(story.style.titleKeyString))
                 .font(.caption)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)

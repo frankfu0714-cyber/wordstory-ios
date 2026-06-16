@@ -399,13 +399,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No saved stories yet. Tap the heart on a generated story to keep it."
+            "value": "No saved stories yet. Generated stories appear here automatically."
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "還沒有收藏的故事。產生故事後點愛心即可儲存。"
+            "value": "尚未有故事。產生的故事會自動出現在這裡。"
           }
         }
       }

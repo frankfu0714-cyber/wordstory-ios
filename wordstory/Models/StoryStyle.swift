@@ -10,8 +10,11 @@ enum StoryStyle: String, CaseIterable, Codable, Identifiable {
 
     var id: String { rawValue }
 
-    /// Localized title key for use with `String(localized:)`.
-    var titleKey: String.LocalizationValue {
+    /// Raw key strings, exposed so SwiftUI `Text` views can wrap them in
+    /// `LocalizedStringKey(...)` and pick up the `\.locale` environment
+    /// the app root sets in same-session language switches. `String(localized:)`
+    /// reads `Bundle.main` instead, which only refreshes on next launch.
+    var titleKeyString: String {
         switch self {
         case .shortStory:  return "style.short_story.title"
         case .newsArticle: return "style.news_article.title"
@@ -22,7 +25,7 @@ enum StoryStyle: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    var descriptionKey: String.LocalizationValue {
+    var descriptionKeyString: String {
         switch self {
         case .shortStory:  return "style.short_story.description"
         case .newsArticle: return "style.news_article.description"
@@ -32,4 +35,10 @@ enum StoryStyle: String, CaseIterable, Codable, Identifiable {
         case .custom:      return "style.custom.description"
         }
     }
+
+    /// Retained for any caller that still needs a Foundation-resolved
+    /// string (e.g. when building a `String` that goes into a format).
+    /// Prefer `titleKeyString` + `Text(LocalizedStringKey(...))` in SwiftUI.
+    var titleKey: String.LocalizationValue { .init(stringLiteral: titleKeyString) }
+    var descriptionKey: String.LocalizationValue { .init(stringLiteral: descriptionKeyString) }
 }

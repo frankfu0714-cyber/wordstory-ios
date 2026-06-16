@@ -6,6 +6,9 @@ struct SavedStoriesView: View {
     @Query(sort: \SavedStory.dateCreated, order: .reverse) private var stories: [SavedStory]
     @Environment(\.modelContext) private var modelContext
     @Query private var allWords: [Word]
+    /// See StoryView for rationale — explicit-locale resolve to keep the
+    /// nav title in sync with same-session Settings switches.
+    @Environment(\.locale) private var locale
 
     /// In-progress generations sort to the top so the user sees them while
     /// the background Task is still running; everything else falls back to
@@ -45,7 +48,7 @@ struct SavedStoriesView: View {
                     .listStyle(.insetGrouped)
                 }
             }
-            .navigationTitle("saved.tab")
+            .navigationTitle(String(localized: "saved.tab", locale: locale))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -155,7 +158,7 @@ struct SavedStoriesView: View {
 
     private func chipsRow(for story: SavedStory) -> some View {
         HStack(spacing: 6) {
-            Text(String(localized: story.style.titleKey))
+            Text(LocalizedStringKey(story.style.titleKeyString))
                 .font(.caption2)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 2)

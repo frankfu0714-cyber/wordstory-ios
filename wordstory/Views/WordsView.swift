@@ -18,6 +18,11 @@ struct WordsView: View {
     @Binding var showSettings: Bool
     @Query private var allWords: [Word]
     @Environment(\.modelContext) private var modelContext
+    /// See StoryView for the rationale — navigationTitle bridging on
+    /// iOS 17/18 occasionally pins to the bundle locale; resolving via
+    /// the env locale keeps the title in sync with same-session Settings
+    /// language switches.
+    @Environment(\.locale) private var locale
 
     @State private var sortOrder: WordSortOrder = .recent
     @State private var showAddSheet = false
@@ -139,7 +144,7 @@ struct WordsView: View {
                 }
             }
             .animation(.spring(response: 0.42, dampingFraction: 0.85), value: toastMessage)
-            .navigationTitle("tab.words")
+            .navigationTitle(String(localized: "tab.words", locale: locale))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {

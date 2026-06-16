@@ -141,8 +141,12 @@ enum SeedDemo {
             for s in existingStories { ctx.delete(s) }
         }
 
-        // Insert seed words, oldest first so the most recent shows on top of the list.
+        // Insert seed words oldest-first (newest shows on top of the list)
+        // and capture each word's UUID by sourceText so we can wire the
+        // saved stories' vocabIDs correctly — SavedStoryDetail uses these
+        // ids to look up Words for vocab highlighting.
         let now = Date()
+        var idBySource: [String: UUID] = [:]
         for (i, seed) in words.enumerated() {
             let w = Word(
                 sourceText: seed.source,
@@ -153,42 +157,41 @@ enum SeedDemo {
                 addedDate: now.addingTimeInterval(-Double((words.count - 1 - i) * 60))
             )
             ctx.insert(w)
+            idBySource[seed.source] = w.id
         }
 
-        // Encode the demo Story view payload so StoryView can hydrate it.
-        if let data = try? JSONEncoder().encode(demoStory) {
-            UserDefaults.standard.set(data, forKey: "seedDemo.story")
+        func vocabIDs(for sources: [String]) -> [UUID] {
+            sources.compactMap { idBySource[$0] }
         }
-        // Pin the indexes (0-4) of the words used in the demo story so
-        // StoryView can highlight them. We'll resolve them to ids on appear.
-        UserDefaults.standard.set(
-            ["serendipity", "ephemeral", "glossy", "look forward to", "redact"],
-            forKey: "seedDemo.storyVocab"
-        )
 
-        // Insert two saved stories so the Saved tab has visible rows.
-        if let data1 = try? JSONEncoder().encode(demoStory.sentences) {
+        // Saved tab needs two finished stories: the screenshot tests tap
+        // the first one to capture the detail view. Newest first by date,
+        // so demoStory (the longer short_story) ends up at the top.
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        if let data1 = try? encoder.encode(demoStory.sentences) {
             let json1 = String(data: data1, encoding: .utf8) ?? "[]"
             let s1 = SavedStory(
-                dateCreated: now.addingTimeInterval(-3600 * 24),
+                dateCreated: now.addingTimeInterval(-3600 * 6),
                 style: .shortStory,
                 direction: .enToZh,
                 sentencesJSON: json1,
-                vocabIDs: [],
+                vocabIDs: vocabIDs(for: ["serendipity", "ephemeral", "glossy",
+                                         "look forward to", "redact"]),
                 titlePreview: String(demoStory.story_en.prefix(40)),
                 storyEnFull: demoStory.story_en,
                 storyZhFull: demoStory.story_zh
             )
             ctx.insert(s1)
         }
-        if let data2 = try? JSONEncoder().encode(demoStory2.sentences) {
+        if let data2 = try? encoder.encode(demoStory2.sentences) {
             let json2 = String(data: data2, encoding: .utf8) ?? "[]"
             let s2 = SavedStory(
-                dateCreated: now.addingTimeInterval(-3600 * 48),
+                dateCreated: now.addingTimeInterval(-3600 * 30),
                 style: .newsArticle,
                 direction: .enToZh,
                 sentencesJSON: json2,
-                vocabIDs: [],
+                vocabIDs: vocabIDs(for: ["felonious", "vandalize", "wistful"]),
                 titlePreview: String(demoStory2.story_en.prefix(40)),
                 storyEnFull: demoStory2.story_en,
                 storyZhFull: demoStory2.story_zh

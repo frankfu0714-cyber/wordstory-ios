@@ -76,9 +76,6 @@ struct StoryView: View {
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 12)
-                #if DEBUG
-                .onAppear { hydrateSeedDemoStoryIfNeeded() }
-                #endif
                 .padding(.bottom, 100)
             }
             .background(Theme.background)
@@ -292,43 +289,6 @@ struct StoryView: View {
             }
         }
     }
-
-    #if DEBUG
-    /// Hydrate the demo SavedStory written by `SeedDemo` so screenshots 4 + 5
-    /// can render in the Saved tab without a live Gemini call. Inserts a
-    /// completed SavedStory directly into the modelContext.
-    private func hydrateSeedDemoStoryIfNeeded() {
-        guard SeedDemo.isActive else { return }
-        guard let data = UserDefaults.standard.data(forKey: "seedDemo.story"),
-              let resp = try? JSONDecoder().decode(APIService.GenerateResponse.self, from: data)
-        else { return }
-        let vocabKeys = UserDefaults.standard.stringArray(forKey: "seedDemo.storyVocab") ?? []
-        let vocab = vocabKeys.compactMap { key in
-            allWords.first { $0.sourceText == key }
-        }
-        selectedIDs = Set(vocab.map(\.id))
-        // Idempotent: only insert if we don't already have a seeded story.
-        let fd = FetchDescriptor<SavedStory>()
-        if let existing = try? modelContext.fetch(fd), !existing.isEmpty { return }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        let sentencesJSON = (try? encoder.encode(resp.sentences ?? []))
-            .flatMap { String(data: $0, encoding: .utf8) } ?? ""
-        let preview = String(resp.story_en.prefix(40))
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let seeded = SavedStory(
-            style: style,
-            direction: direction,
-            sentencesJSON: sentencesJSON,
-            vocabIDs: vocab.map(\.id),
-            titlePreview: preview,
-            storyEnFull: resp.story_en,
-            storyZhFull: resp.story_zh
-        )
-        modelContext.insert(seeded)
-        try? modelContext.save()
-    }
-    #endif
 
     // MARK: - Auto-save dispatch
 

@@ -542,7 +542,11 @@ private struct WordRow: View {
                 .opacity(revealed ? 0 : 1)
                 .zIndex(revealed ? 0 : 1)
             backFace
-                .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+                // Inner counter-rotation around the SAME axis as the outer
+                // flip so the back face reads upright after the rotation.
+                // Axis is x=1 (horizontal hinge), so the card flips top-down
+                // like a calendar page, not side-to-side like a door.
+                .rotation3DEffect(.degrees(180), axis: (x: 1, y: 0, z: 0))
                 .opacity(revealed ? 1 : 0)
                 .zIndex(revealed ? 1 : 0)
         }
@@ -554,7 +558,7 @@ private struct WordRow: View {
         // Frank saw an instant face swap instead of a rotation.
         .rotation3DEffect(
             .degrees(revealed ? 180 : 0),
-            axis: (x: 0, y: 1, z: 0),
+            axis: (x: 1, y: 0, z: 0),
             perspective: 0.6
         )
         // Implicit + explicit animation belt-and-suspenders. The implicit
@@ -574,10 +578,12 @@ private struct WordRow: View {
                 .animation(.easeInOut(duration: 0.35), value: isFlashed)
         )
         .onTapGesture { toggle() }
-        .onDisappear {
-            hideTask?.cancel()
-            hideTask = nil
-        }
+        // Intentionally no .onDisappear cancellation: List can dispatch
+        // disappear events for off-screen rows (or transient relayouts)
+        // mid-timer. Cancelling on disappear was killing the auto-hide
+        // for newly-added words whose row briefly re-laid out after
+        // SwiftData republished the @Query. The Task is short (5s) and
+        // a no-op if the view identity changed — safe to let it run.
     }
 
     // MARK: - Faces
@@ -732,9 +738,17 @@ private struct WordRow: View {
         } else {
             withAnimation(Self.flipAnimation) { revealed = true }
             hideTask?.cancel()
+            // Capture sourceText so the log line works even after the
+            // Word reference becomes invalid (deleted, replaced, etc.).
+            let label = word.sourceText
             hideTask = Task { @MainActor in
+                print("[WordRow] hide timer started for \(label)")
                 try? await Task.sleep(for: Self.autoHideDelay)
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled else {
+                    print("[WordRow] hide timer cancelled for \(label)")
+                    return
+                }
+                print("[WordRow] hide fired for \(label)")
                 withAnimation(Self.flipAnimation) { revealed = false }
             }
         }

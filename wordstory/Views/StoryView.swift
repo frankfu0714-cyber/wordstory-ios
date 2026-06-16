@@ -331,8 +331,14 @@ struct StoryView: View {
                 Spacer()
             }
 
-            if let sentences = generated.sentences, !sentences.isEmpty {
-                interleavedSentences(sentences)
+            // Prefer the API-provided sentence pairs; if the response came
+            // back without them (newer dual-language path can return an
+            // empty `sentences` array on truncation), best-effort split
+            // story_en + story_zh client-side. Only fall back to the
+            // English-only flat block if we still can't pair them.
+            let effective = effectiveSentences(generated: generated)
+            if !effective.isEmpty {
+                interleavedSentences(effective)
             } else {
                 fallbackBlocks(generated: generated)
             }
@@ -535,24 +541,69 @@ struct StoryView: View {
 
     // MARK: - Save / unsave
 
-    /// Stable JSON representation of the current `generated.sentences`.
-    /// Identity is by exact-content match — two stories with the same
-    /// sentence-pair array are considered the same.
-    private var currentSentencesJSON: String? {
-        guard let pairs = generated?.sentences, !pairs.isEmpty else { return nil }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys] // stable hash, immune to dict-order quirks
-        guard let data = try? encoder.encode(pairs) else { return nil }
-        return String(data: data, encoding: .utf8)
+    /// Stable identity string used as the SavedStory match key.
+    /// Prefers a JSON-encoded sentence-pair array (round-trippable) when
+    /// the API gave us one. Falls back to a `flat:<en>|<zh>` tag for
+    /// responses that came back without a `sentences` array — without
+    /// the fallback, the save heart silently no-ops on those stories.
+    private var currentStoryIdentity: String? {
+        guard let generated else { return nil }
+        if let pairs = generated.sentences, !pairs.isEmpty {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            if let data = try? encoder.encode(pairs),
+               let json = String(data: data, encoding: .utf8) {
+                return json
+            }
+        }
+        return "flat:" + generated.story_en + "|" + generated.story_zh
+    }
+
+    /// Sentence pairs the renderer should actually use. Prefer the API's
+    /// `sentences` field; on empty, split `story_en` / `story_zh` on
+    /// sentence punctuation and zip the halves. Best-effort — when the
+    /// two halves have a different sentence count we pad with empty zh,
+    /// so the English still renders correctly.
+    private func effectiveSentences(generated: APIService.GenerateResponse) -> [APIService.GenerateResponse.SentencePair] {
+        if let pairs = generated.sentences, !pairs.isEmpty { return pairs }
+        let enParts = splitForRendering(generated.story_en, delimiters: ".!?")
+        let zhParts = splitForRendering(generated.story_zh, delimiters: "。！？")
+        guard !enParts.isEmpty else { return [] }
+        return enParts.enumerated().map { idx, en in
+            let zh = idx < zhParts.count ? zhParts[idx] : ""
+            return APIService.GenerateResponse.SentencePair(en: en, zh: zh)
+        }
+    }
+
+    /// Split a story body into sentences on the given delimiters, keeping
+    /// the delimiter glued to the preceding sentence (so periods don't get
+    /// lost from the rendered output).
+    private func splitForRendering(_ text: String, delimiters: String) -> [String] {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        var sentences: [String] = []
+        var current = ""
+        let delimSet = Set(delimiters)
+        for ch in trimmed {
+            current.append(ch)
+            if delimSet.contains(ch) {
+                let s = current.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !s.isEmpty { sentences.append(s) }
+                current = ""
+            }
+        }
+        let tail = current.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !tail.isEmpty { sentences.append(tail) }
+        return sentences
     }
 
     private var isCurrentStorySaved: Bool {
-        guard let json = currentSentencesJSON else { return false }
-        return savedStories.contains { $0.sentencesJSON == json }
+        guard let id = currentStoryIdentity else { return false }
+        return savedStories.contains { $0.sentencesJSON == id }
     }
 
     private func toggleSave() {
-        guard let generated, let json = currentSentencesJSON else { return }
+        guard let generated, let json = currentStoryIdentity else { return }
         if let existing = savedStories.first(where: { $0.sentencesJSON == json }) {
             modelContext.delete(existing)
             try? modelContext.save()
@@ -629,6 +680,10 @@ struct StoryView: View {
                 customPrompt: prompt,
                 direction: dir
             )
+            print(String(format: "[StoryView] generated: sentences=%d, en=%d chars, zh=%d chars",
+                         response.sentences?.count ?? 0,
+                         response.story_en.count,
+                         response.story_zh.count))
             generated = response
             generatedFor = vocab
             // Default: English shown, Chinese hidden. The user reveals

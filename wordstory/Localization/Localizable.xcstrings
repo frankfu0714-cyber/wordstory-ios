@@ -511,6 +511,57 @@
         }
       }
     },
+    "saved.title.done": {
+      "comment": "Confirm button on the title-edit sheet.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        }
+      }
+    },
+    "saved.title.edit": {
+      "comment": "Toolbar label / accessibility label for opening the title-edit sheet.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit title"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "編輯標題"
+          }
+        }
+      }
+    },
+    "saved.title.placeholder": {
+      "comment": "Placeholder for the title-edit TextField.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Story title"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "故事標題"
+          }
+        }
+      }
+    },
     "saved.unsaved_toast": {
       "extractionState": "stale",
       "localizations": {
@@ -674,6 +725,7 @@
       }
     },
     "settings.direction.hint": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -690,6 +742,7 @@
       }
     },
     "settings.direction.label": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -706,6 +759,7 @@
       }
     },
     "settings.direction.learning": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1093,7 +1147,25 @@
         }
       }
     },
+    "story.toast.generating": {
+      "comment": "Toast after the user taps Generate, telling them the result lives in the Saved tab.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generating story — you'll find it in the Saved tab"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在產生故事 — 可在「已儲存」分頁查看"
+          }
+        }
+      }
+    },
     "style.custom.description": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1110,6 +1182,7 @@
       }
     },
     "style.custom.title": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1126,6 +1199,7 @@
       }
     },
     "style.dialogue.description": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1136,12 +1210,13 @@
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "兩位角色的對話"
+            "value": "兩人之間的對話"
           }
         }
       }
     },
     "style.dialogue.title": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1158,6 +1233,7 @@
       }
     },
     "style.letter.description": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1168,12 +1244,13 @@
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "一封親切的信"
+            "value": "一封親切的個人書信"
           }
         }
       }
     },
     "style.letter.title": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1190,6 +1267,7 @@
       }
     },
     "style.news_article.description": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1200,12 +1278,13 @@
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "約 200 字，新聞語氣"
+            "value": "約 200 字，新聞體"
           }
         }
       }
     },
     "style.news_article.title": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1222,6 +1301,7 @@
       }
     },
     "style.poem.description": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1232,12 +1312,13 @@
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "短小、生動、可隱喻"
+            "value": "短小生動，用法寬鬆"
           }
         }
       }
     },
     "style.poem.title": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1254,6 +1335,7 @@
       }
     },
     "style.short_story.description": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1264,12 +1346,13 @@
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "約 150 字，單一場景"
+            "value": "約 150 字，一個場景"
           }
         }
       }
     },
     "style.short_story.title": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1442,74 +1525,6 @@
     "繁體中文": {
       "comment": "A Chinese-traditional name for the language.",
       "isCommentAutoGenerated": true
-    },
-    "story.toast.generating": {
-      "comment": "Toast after the user taps Generate, telling them the result lives in the Saved tab.",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Generating story — you'll find it in the Saved tab"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在產生故事 — 可在「已儲存」分頁查看"
-          }
-        }
-      }
-    },
-    "saved.title.edit": {
-      "comment": "Toolbar label / accessibility label for opening the title-edit sheet.",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit title"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "編輯標題"
-          }
-        }
-      }
-    },
-    "saved.title.placeholder": {
-      "comment": "Placeholder for the title-edit TextField.",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Story title"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "故事標題"
-          }
-        }
-      }
-    },
-    "saved.title.done": {
-      "comment": "Confirm button on the title-edit sheet.",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Done"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "完成"
-          }
-        }
-      }
     }
   },
   "version": "1.1"

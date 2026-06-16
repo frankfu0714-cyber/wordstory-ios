@@ -1383,6 +1383,57 @@
           }
         }
       }
+    },
+    "saved.generating": {
+      "comment": "Placeholder label while an auto-saved story is still being generated.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generating…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在產生…"
+          }
+        }
+      }
+    },
+    "saved.failed": {
+      "comment": "Label for a saved-story row whose generation failed.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generation failed"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "產生失敗"
+          }
+        }
+      }
+    },
+    "saved.retry": {
+      "comment": "Retry button on a failed saved-story row.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重試"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

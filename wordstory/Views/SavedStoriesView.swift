@@ -5,6 +5,17 @@ struct SavedStoriesView: View {
     @Binding var showSettings: Bool
     @Query(sort: \SavedStory.dateCreated, order: .reverse) private var stories: [SavedStory]
     @Environment(\.modelContext) private var modelContext
+    @Query private var allWords: [Word]
+
+    /// In-progress generations sort to the top so the user sees them while
+    /// the background Task is still running; everything else falls back to
+    /// reverse-chron.
+    private var sortedStories: [SavedStory] {
+        stories.sorted { a, b in
+            if a.isGenerating != b.isGenerating { return a.isGenerating && !b.isGenerating }
+            return a.dateCreated > b.dateCreated
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -14,7 +25,7 @@ struct SavedStoriesView: View {
                     emptyState
                 } else {
                     List {
-                        ForEach(stories) { story in
+                        ForEach(sortedStories) { story in
                             NavigationLink {
                                 SavedStoryDetail(story: story)
                             } label: {
@@ -49,40 +60,121 @@ struct SavedStoriesView: View {
         }
     }
 
+    @ViewBuilder
     private func row(for story: SavedStory) -> some View {
+        if story.isGenerating {
+            generatingRow(for: story)
+        } else if story.generationFailed {
+            failedRow(for: story)
+        } else {
+            completedRow(for: story)
+        }
+    }
+
+    private func completedRow(for story: SavedStory) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(story.titlePreview.isEmpty ? "—" : story.titlePreview + "…")
                 .font(Theme.serif(16, weight: .semibold))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(2)
-            HStack(spacing: 6) {
-                Text(String(localized: story.style.titleKey))
-                    .font(.caption2)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule().fill(Color.accentColor.opacity(0.10))
-                    )
-                    .foregroundStyle(Color.accentColor)
-                Text(directionLabel(for: story.direction))
-                    .font(.caption2)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule().fill(Theme.paperSoft)
-                    )
-                    .foregroundStyle(Theme.inkSoft)
-                Spacer()
-                Text(story.dateCreated, format: .dateTime.month(.abbreviated).day().year())
-                    .font(.caption2)
-                    .foregroundStyle(Theme.inkQuiet)
-            }
+            chipsRow(for: story)
         }
         .padding(.vertical, 4)
     }
 
+    private func generatingRow(for story: SavedStory) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(Color.accentColor)
+                Text("saved.generating")
+                    .font(Theme.serif(16, weight: .semibold))
+                    .foregroundStyle(Theme.inkSoft)
+                Spacer()
+            }
+            let words = vocabPreview(for: story)
+            if !words.isEmpty {
+                Text(words)
+                    .font(.caption)
+                    .foregroundStyle(Theme.inkQuiet)
+                    .lineLimit(2)
+            }
+            chipsRow(for: story)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func failedRow(for story: SavedStory) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Theme.danger)
+                    .font(.system(size: 14))
+                Text("saved.failed")
+                    .font(Theme.serif(16, weight: .semibold))
+                    .foregroundStyle(Theme.danger)
+                Spacer()
+                Button {
+                    retry(story)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("saved.retry")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.accentColor))
+                }
+                .buttonStyle(.plain)
+            }
+            if let reason = story.generationFailureReason, !reason.isEmpty {
+                Text(reason)
+                    .font(.caption)
+                    .foregroundStyle(Theme.inkQuiet)
+                    .lineLimit(2)
+            }
+            chipsRow(for: story)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func chipsRow(for story: SavedStory) -> some View {
+        HStack(spacing: 6) {
+            Text(String(localized: story.style.titleKey))
+                .font(.caption2)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(
+                    Capsule().fill(Color.accentColor.opacity(0.10))
+                )
+                .foregroundStyle(Color.accentColor)
+            Text(directionLabel(for: story.direction))
+                .font(.caption2)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(
+                    Capsule().fill(Theme.paperSoft)
+                )
+                .foregroundStyle(Theme.inkSoft)
+            Spacer()
+            Text(story.dateCreated, format: .dateTime.month(.abbreviated).day().year())
+                .font(.caption2)
+                .foregroundStyle(Theme.inkQuiet)
+        }
+    }
+
     private func directionLabel(for d: LanguageDirection) -> String {
         "\(d.targetDisplayName) → \(d.nativeDisplayName)"
+    }
+
+    private func vocabPreview(for story: SavedStory) -> String {
+        let ids = Set(story.vocabIDs)
+        let words = allWords.filter { ids.contains($0.id) }.prefix(6).map(\.sourceText)
+        return words.joined(separator: " · ")
     }
 
     private var emptyState: some View {
@@ -102,6 +194,38 @@ struct SavedStoriesView: View {
     private func delete(_ story: SavedStory) {
         modelContext.delete(story)
         try? modelContext.save()
+    }
+
+    /// Reset a failed row to in-flight and re-dispatch the same generation
+    /// request. Original style / direction / vocabIDs / customPrompt all
+    /// come from the stored SavedStory so the retry hits the same intent.
+    private func retry(_ story: SavedStory) {
+        let texts: [String] = {
+            let ids = Set(story.vocabIDs)
+            return allWords.filter { ids.contains($0.id) }.map(\.sourceText)
+        }()
+        guard !texts.isEmpty else { return }
+        story.isGenerating = true
+        story.generationFailed = false
+        story.generationFailureReason = nil
+        try? modelContext.save()
+
+        let id = story.id
+        let st = story.style
+        let dir = story.direction
+        let prompt = story.customPromptStored
+        let ctx = modelContext
+
+        Task { @MainActor in
+            await runGeneration(
+                id: id,
+                texts: texts,
+                style: st,
+                customPrompt: prompt,
+                direction: dir,
+                context: ctx
+            )
+        }
     }
 }
 

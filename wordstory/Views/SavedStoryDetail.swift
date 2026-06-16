@@ -2,10 +2,9 @@ import SwiftUI
 import SwiftData
 
 /// Read-only render of a `SavedStory`. Same sentence-pair interleaving + Show
-/// Chinese toggle as the live StoryView, but with no generate / save controls.
-/// Looks up the vocabulary `Word` records by id so highlights still work when
-/// reopened — and falls through to a name-only label if a referenced word has
-/// since been deleted.
+/// Chinese toggle as the live StoryView used to do, but with no generate /
+/// save controls — every generation lands here automatically. Looks up the
+/// vocabulary `Word` records by id so highlights still work when reopened.
 struct SavedStoryDetail: View {
     let story: SavedStory
     @Query private var allWords: [Word]
@@ -22,48 +21,12 @@ struct SavedStoryDetail: View {
             VStack(alignment: .leading, spacing: 14) {
                 metaHeader
 
-                HStack {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            showChinese.toggle()
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: showChinese ? "eye.slash.fill" : "eye.fill")
-                                .font(.system(size: 12, weight: .semibold))
-                            Text(showChinese ? "story.hide_chinese" : "story.show_chinese")
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                        .foregroundStyle(showChinese ? Color.white : Color.accentColor)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            Capsule().fill(showChinese ? Color.accentColor : Color.accentColor.opacity(0.10))
-                        )
-                        .overlay(
-                            Capsule().stroke(Color.accentColor.opacity(0.35), lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    Spacer()
-                }
-
-                if !story.sentences.isEmpty {
-                    interleaved(story.sentences)
+                if story.isGenerating {
+                    generatingPlaceholder
+                } else if story.generationFailed {
+                    failedPlaceholder
                 } else {
-                    // Fallback render for legacy saves (none yet, but defensive).
-                    Text(makeAttributedStory(text: story.storyEnFull, words: vocab))
-                        .font(Theme.serif(18))
-                        .lineSpacing(8)
-                        .foregroundStyle(Theme.ink)
-                        .textSelection(.enabled)
-                    if showChinese, !story.storyZhFull.isEmpty {
-                        Text(makeChineseAttributed(text: story.storyZhFull, words: vocab))
-                            .font(.system(size: 14))
-                            .lineSpacing(5)
-                            .foregroundStyle(Theme.inkSoft)
-                            .textSelection(.enabled)
-                    }
+                    storyBody
                 }
             }
             .padding(.horizontal, 18)
@@ -71,7 +34,7 @@ struct SavedStoryDetail: View {
             .padding(.bottom, 60)
         }
         .background(Theme.background.ignoresSafeArea())
-        .navigationTitle(story.titlePreview.isEmpty ? "—" : story.titlePreview + "…")
+        .navigationTitle(navigationTitleString)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $tappedWord) { word in
             WordDetailModal(word: word)
@@ -87,6 +50,107 @@ struct SavedStoryDetail: View {
             }
             return .systemAction
         })
+    }
+
+    private var navigationTitleString: String {
+        if story.isGenerating { return String(localized: "saved.generating") }
+        if story.generationFailed { return String(localized: "saved.failed") }
+        return story.titlePreview.isEmpty ? "—" : story.titlePreview + "…"
+    }
+
+    private var storyBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        showChinese.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: showChinese ? "eye.slash.fill" : "eye.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text(showChinese ? "story.hide_chinese" : "story.show_chinese")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundStyle(showChinese ? Color.white : Color.accentColor)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule().fill(showChinese ? Color.accentColor : Color.accentColor.opacity(0.10))
+                    )
+                    .overlay(
+                        Capsule().stroke(Color.accentColor.opacity(0.35), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                Spacer()
+            }
+
+            if !story.sentences.isEmpty {
+                interleaved(story.sentences)
+            } else {
+                // Fallback render for responses where the sentences[] array
+                // was lost to truncation.
+                Text(makeAttributedStory(text: story.storyEnFull, words: vocab))
+                    .font(Theme.serif(18))
+                    .lineSpacing(8)
+                    .foregroundStyle(Theme.ink)
+                    .textSelection(.enabled)
+                if showChinese, !story.storyZhFull.isEmpty {
+                    Text(makeChineseAttributed(text: story.storyZhFull, words: vocab, spans: nil))
+                        .font(.system(size: 14))
+                        .lineSpacing(5)
+                        .foregroundStyle(Theme.inkSoft)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+    }
+
+    private var generatingPlaceholder: some View {
+        VStack(alignment: .center, spacing: 12) {
+            ProgressView()
+                .controlSize(.large)
+                .tint(Color.accentColor)
+            Text("saved.generating")
+                .font(.subheadline)
+                .foregroundStyle(Theme.inkSoft)
+            if !vocab.isEmpty {
+                FlowLayout(spacing: 6, rowSpacing: 6) {
+                    ForEach(vocab) { w in
+                        Text(w.sourceText)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Theme.inkSoft)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Theme.paperSoft))
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+    }
+
+    private var failedPlaceholder: some View {
+        VStack(alignment: .center, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 32))
+                .foregroundStyle(Theme.danger)
+            Text("saved.failed")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.danger)
+            if let reason = story.generationFailureReason, !reason.isEmpty {
+                Text(reason)
+                    .font(.caption)
+                    .foregroundStyle(Theme.inkQuiet)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 18)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
     }
 
     private var metaHeader: some View {
@@ -120,7 +184,7 @@ struct SavedStoryDetail: View {
                         .foregroundStyle(Theme.ink)
                         .textSelection(.enabled)
                     if showChinese {
-                        Text(makeChineseAttributed(text: pair.zh, words: vocab))
+                        Text(makeChineseAttributed(text: pair.zh, words: vocab, spans: pair.vocab_spans))
                             .font(.system(size: 14))
                             .lineSpacing(3)
                             .foregroundStyle(Theme.inkSoft)
@@ -131,8 +195,14 @@ struct SavedStoryDetail: View {
         }
     }
 
-    // MARK: - Highlight helpers (mirrors StoryView's implementations)
+    // MARK: - Highlight helpers
 
+    /// Highlights English vocab including INFLECTED forms of multi-word
+    /// phrases. Splits the phrase on whitespace and allows each token a
+    /// short optional suffix, so `look forward to` matches `look forward
+    /// to`, `looked forward to`, `looking forward to`, `looks forward to`.
+    /// Each token gets up to 4 trailing letters — same suffix budget the
+    /// single-word matcher has always used.
     private func makeAttributedStory(text: String, words: [Word]) -> AttributedString {
         var attr = AttributedString(text)
         let nsText = text as NSString
@@ -145,8 +215,11 @@ struct SavedStoryDetail: View {
             if containsCJK(trimmed) {
                 pattern = NSRegularExpression.escapedPattern(for: trimmed)
             } else {
-                let esc = NSRegularExpression.escapedPattern(for: trimmed)
-                pattern = "\\b\(esc)(?:[a-zA-Z]{0,4})?\\b"
+                let tokens = trimmed.split(separator: " ", omittingEmptySubsequences: true)
+                let parts = tokens.map { token in
+                    NSRegularExpression.escapedPattern(for: String(token)) + "(?:[a-zA-Z]{0,4})?"
+                }
+                pattern = "\\b" + parts.joined(separator: "\\s+") + "\\b"
             }
             guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { continue }
             let matches = regex.matches(in: text, range: NSRange(location: 0, length: nsText.length))
@@ -162,13 +235,25 @@ struct SavedStoryDetail: View {
         return attr
     }
 
-    private func makeChineseAttributed(text: String, words: [Word]) -> AttributedString {
+    /// Prefers Gemini's per-sentence `vocab_spans` exact substring; falls
+    /// back to dictionary-derived candidates when the span is missing.
+    private func makeChineseAttributed(
+        text: String,
+        words: [Word],
+        spans: [String: String]?
+    ) -> AttributedString {
         var attr = AttributedString(text)
         let nsText = text as NSString
         var lookups: [(candidate: String, word: Word)] = []
         for word in words {
-            for cand in chineseCandidates(for: word) {
-                lookups.append((cand, word))
+            let key = word.sourceText.trimmingCharacters(in: .whitespaces).lowercased()
+            if let span = spans?[key],
+               !span.trimmingCharacters(in: .whitespaces).isEmpty {
+                lookups.append((span, word))
+            } else {
+                for cand in chineseCandidates(for: word) {
+                    lookups.append((cand, word))
+                }
             }
         }
         lookups.sort { $0.candidate.count > $1.candidate.count }

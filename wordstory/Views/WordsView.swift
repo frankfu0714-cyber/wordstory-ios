@@ -38,6 +38,18 @@ struct WordsView: View {
     @State private var suggestions: [String] = []
     @State private var suggestionsTask: Task<Void, Never>?
 
+    // ---- "Choose English word" picker ----
+    @State private var synonymsContext: SynonymsContext?
+
+    /// Identifiable wrapper so `.sheet(item:)` re-presents whenever the user
+    /// taps a different Chinese suggestion. The `id` is the term itself, so
+    /// tapping the same term twice in a row reuses the same sheet instance.
+    private struct SynonymsContext: Identifiable {
+        let id: String
+        var chinese: String { id }
+        init(_ chinese: String) { self.id = chinese }
+    }
+
     private var sortedWords: [Word] {
         var list = allWords
         switch sortOrder {
@@ -168,6 +180,13 @@ struct WordsView: View {
             .sheet(isPresented: $showAddSheet) {
                 AddWordSheet()
             }
+            .sheet(item: $synonymsContext) { ctx in
+                EnglishSynonymsSheet(chinese: ctx.chinese) { englishWord in
+                    // The sheet dismisses itself; we run the normal English
+                    // add flow with the user's chosen headword.
+                    Task { @MainActor in await addEnglish(englishWord) }
+                }
+            }
         }
     }
 
@@ -184,7 +203,7 @@ struct WordsView: View {
             TextField("add_field.placeholder", text: $addText)
                 .focused($addFieldFocused)
                 .submitLabel(.done)
-                .onSubmit { Task { @MainActor in await submitAdd() } }
+                .onSubmit { tryAdd(addText) }
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .disabled(isAdding)
@@ -296,11 +315,27 @@ struct WordsView: View {
     ///   fills success or marks `definitionFetchFailed = true`.
     /// `overrideText` lets the autocomplete dropdown submit a specific word
     /// without round-tripping through the bound `addText` state.
+    /// Router for both the Enter-key and tap-to-add paths. Chinese input
+    /// pivots to the "Choose English word" picker so the Words list stays
+    /// English-only; English input goes straight through the add flow.
+    private func tryAdd(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        switch LanguageDirection.detect(for: trimmed) {
+        case .enToZh:
+            Task { @MainActor in await addEnglish(trimmed) }
+        case .zhToEn:
+            // Eagerly hide the autocomplete dropdown so the sheet's animation
+            // doesn't race with it.
+            suggestionsTask?.cancel()
+            withAnimation(.easeInOut(duration: 0.15)) { suggestions = [] }
+            synonymsContext = SynonymsContext(trimmed)
+        }
+    }
+
     @MainActor
-    private func submitAdd(overrideText: String? = nil) async {
-        let raw = overrideText ?? addText
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !isAdding else { return }
+    private func addEnglish(_ trimmed: String) async {
+        guard !isAdding else { return }
 
         // Duplicate check (case-insensitive on the source text).
         let lower = trimmed.lowercased()
@@ -312,11 +347,10 @@ struct WordsView: View {
             return
         }
 
-        // Per-word direction is derived from the *input* — typing `貓` should
-        // produce a zh-to-en card regardless of the user's global setting,
-        // so the back face shows `cat` rather than re-asking the server in
-        // the wrong direction.
-        let dir = LanguageDirection.detect(for: trimmed)
+        // The Words list is English-only — Chinese inputs go through the
+        // synonyms sheet, which calls back here with the user's chosen
+        // English headword. Hard-code direction accordingly.
+        let dir: LanguageDirection = .enToZh
         isAdding = true
         let word = Word(sourceText: trimmed, direction: dir)
         modelContext.insert(word)
@@ -385,19 +419,17 @@ struct WordsView: View {
         }
     }
 
-    /// Tap handler for an autocomplete row — submits that exact word as
-    /// if the user had typed it and hit Enter, then closes the dropdown.
+    /// Tap handler for an autocomplete row — routes through `tryAdd` so
+    /// Chinese suggestions open the "Choose English word" picker and
+    /// English suggestions go straight into the add flow.
     private func selectSuggestion(_ word: String) {
         suggestionsTask?.cancel()
         suggestionsTask = nil
-        // Hide the dropdown immediately so it doesn't linger during the
-        // async fetch — the submitAdd flow will clear addText on completion
-        // which would also trigger an empty-suggestions onChange, but doing
-        // it eagerly here gives instant visual feedback.
+        // Hide the dropdown immediately so it doesn't linger.
         withAnimation(.easeInOut(duration: 0.15)) {
             suggestions = []
         }
-        Task { @MainActor in await submitAdd(overrideText: word) }
+        tryAdd(word)
     }
 
     /// Briefly highlight a row (used when typing an already-present word).

@@ -197,6 +197,30 @@ actor DictionaryService {
         }
     }
 
+    /// Pair returned by `reverseLookupWithGlosses` — one row of the
+    /// "Choose English word" picker.
+    struct Candidate {
+        let english: String
+        /// The full Chinese gloss for the English candidate (the same string
+        /// ECDICT would return in a normal en → zh forward lookup). Empty if
+        /// the forward lookup happens to miss (rare; just means we show the
+        /// English word alone).
+        let gloss: String
+    }
+
+    /// Reverse lookup that also resolves each candidate's full forward
+    /// translation in one batched call. Used by the synonyms sheet so it
+    /// can render `cat` next to its Chinese gloss in a single round-trip
+    /// to the actor.
+    func reverseLookupWithGlosses(_ chinese: String, limit: Int) -> [Candidate] {
+        let hits = reverseLookup(chinese, limit: limit)
+        guard !hits.isEmpty else { return [] }
+        return hits.map { hit in
+            let gloss = forwardLookup(hit.translation)?.translation ?? ""
+            return Candidate(english: hit.translation, gloss: gloss)
+        }
+    }
+
     /// Prefix search for Chinese terms — the zh-to-en autocomplete path.
     /// Returns distinct Chinese terms starting with `prefix`, alphabetically.
     func searchPrefixZh(_ prefix: String, limit: Int) -> [String] {

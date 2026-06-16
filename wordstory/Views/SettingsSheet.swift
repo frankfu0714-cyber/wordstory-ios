@@ -6,15 +6,10 @@ struct SettingsSheet: View {
     @Environment(\.modelContext) private var modelContext
 
     @AppStorage("uiLanguage") private var uiLanguage: String = ""
-    @AppStorage("languageDirection") private var directionRaw = LanguageDirection.enToZh.rawValue
 
     @Query private var allWords: [Word]
     @State private var showClearConfirm = false
     @State private var showRestartHint = false
-
-    private var direction: LanguageDirection {
-        LanguageDirection(rawValue: directionRaw) ?? .enToZh
-    }
 
     private var appVersion: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
@@ -36,36 +31,6 @@ struct SettingsSheet: View {
                     Text("settings.language.label")
                 } footer: {
                     Text("settings.language.hint")
-                        .font(.caption)
-                        .foregroundStyle(Theme.inkQuiet)
-                }
-                .listRowBackground(Theme.paper)
-
-                Section {
-                    Button {
-                        directionRaw = direction.flipped.rawValue
-                    } label: {
-                        HStack {
-                            Text("settings.direction.learning")
-                                .foregroundStyle(Theme.inkSoft)
-                                .font(.subheadline)
-                            Spacer()
-                            Text(direction.targetDisplayName)
-                                .foregroundStyle(Theme.ink)
-                                .fontWeight(.medium)
-                            Image(systemName: "arrow.left.arrow.right")
-                                .font(.caption)
-                                .foregroundStyle(Color.accentColor)
-                            Text(direction.nativeDisplayName)
-                                .foregroundStyle(Theme.inkSoft)
-                                .font(.subheadline)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                } header: {
-                    Text("settings.direction.label")
-                } footer: {
-                    Text("settings.direction.hint")
                         .font(.caption)
                         .foregroundStyle(Theme.inkQuiet)
                 }

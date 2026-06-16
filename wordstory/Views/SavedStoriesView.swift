@@ -73,13 +73,24 @@ struct SavedStoriesView: View {
 
     private func completedRow(for story: SavedStory) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(story.titlePreview.isEmpty ? "—" : story.titlePreview + "…")
+            // displayTitle: user-set customTitle when present, else the
+            // auto-derived titlePreview. Suffix-ellipsis only on the auto
+            // form so user-set titles render exactly as typed.
+            Text(displayLabel(for: story))
                 .font(Theme.serif(16, weight: .semibold))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(2)
             chipsRow(for: story)
         }
         .padding(.vertical, 4)
+    }
+
+    private func displayLabel(for story: SavedStory) -> String {
+        if let custom = story.customTitle?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !custom.isEmpty {
+            return custom
+        }
+        return story.titlePreview.isEmpty ? "—" : story.titlePreview + "…"
     }
 
     private func generatingRow(for story: SavedStory) -> some View {

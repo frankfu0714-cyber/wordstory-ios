@@ -44,10 +44,11 @@ struct StoryView: View {
     @Binding var showSettings: Bool
     @Query private var allWords: [Word]
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("languageDirection") private var directionRaw = LanguageDirection.enToZh.rawValue
-    private var direction: LanguageDirection {
-        LanguageDirection(rawValue: directionRaw) ?? .enToZh
-    }
+    // App is English-learner only as of this release; the user-facing
+    // direction toggle is gone and every generation is en-to-zh. Per-Word
+    // `direction` storage is preserved so legacy zh-to-en cards still
+    // display correctly, but new flow hard-codes here.
+    private let direction: LanguageDirection = .enToZh
 
     @State private var selectedIDs: Set<UUID> = []
     @State private var style: StoryStyle = .shortStory
@@ -338,7 +339,7 @@ struct StoryView: View {
         modelContext.insert(placeholder)
         try? modelContext.save()
 
-        showToast(String(localized: "saved.generating"))
+        showToast(String(localized: "story.toast.generating"))
 
         let texts = vocab.map(\.sourceText)
         let st = style

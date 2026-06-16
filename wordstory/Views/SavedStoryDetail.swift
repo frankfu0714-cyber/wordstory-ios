@@ -7,9 +7,12 @@ import SwiftData
 /// vocabulary `Word` records by id so highlights still work when reopened.
 struct SavedStoryDetail: View {
     let story: SavedStory
+    @Environment(\.modelContext) private var modelContext
     @Query private var allWords: [Word]
     @State private var showChinese: Bool = false
     @State private var tappedWord: Word?
+    @State private var isEditingTitle: Bool = false
+    @State private var titleDraft: String = ""
 
     private var vocab: [Word] {
         let ids = Set(story.vocabIDs)
@@ -36,6 +39,24 @@ struct SavedStoryDetail: View {
         .background(Theme.background.ignoresSafeArea())
         .navigationTitle(navigationTitleString)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // The pencil only makes sense once there's a story to title;
+            // hide it on placeholder/failed rows.
+            if !story.isGenerating && !story.generationFailed {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        titleDraft = story.customTitle ?? story.titlePreview
+                        isEditingTitle = true
+                    } label: {
+                        Image(systemName: "pencil")
+                    }
+                    .accessibilityLabel(Text("saved.title.edit"))
+                }
+            }
+        }
+        .sheet(isPresented: $isEditingTitle) {
+            titleEditSheet
+        }
         .sheet(item: $tappedWord) { word in
             WordDetailModal(word: word)
                 .presentationDetents([.medium])
@@ -55,7 +76,48 @@ struct SavedStoryDetail: View {
     private var navigationTitleString: String {
         if story.isGenerating { return String(localized: "saved.generating") }
         if story.generationFailed { return String(localized: "saved.failed") }
+        if let custom = story.customTitle?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !custom.isEmpty {
+            return custom
+        }
         return story.titlePreview.isEmpty ? "—" : story.titlePreview + "…"
+    }
+
+    /// Small bottom sheet with a single TextField. Trimmed-empty saves
+    /// reset customTitle to nil so the auto preview takes over again.
+    private var titleEditSheet: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("saved.title.placeholder", text: $titleDraft)
+                        .autocorrectionDisabled()
+                        .submitLabel(.done)
+                        .onSubmit(commitTitle)
+                }
+                .listRowBackground(Theme.paper)
+            }
+            .scrollContentBackground(.hidden)
+            .background(Theme.background)
+            .navigationTitle("saved.title.edit")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("action.cancel") { isEditingTitle = false }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("saved.title.done") { commitTitle() }
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+        .presentationDetents([.height(220)])
+    }
+
+    private func commitTitle() {
+        let trimmed = titleDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        story.customTitle = trimmed.isEmpty ? nil : trimmed
+        try? modelContext.save()
+        isEditingTitle = false
     }
 
     private var storyBody: some View {

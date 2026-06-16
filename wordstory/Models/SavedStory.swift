@@ -30,7 +30,12 @@ final class SavedStory {
     var vocabIDs: [UUID]
     /// First ~40 chars of the English story for the list row label. Empty
     /// while generating (the row shows a "Generating…" label instead).
+    /// Used as the FALLBACK title — `customTitle` overrides when set.
     var titlePreview: String
+    /// User-set title — overrides `titlePreview` everywhere it's displayed.
+    /// nil = no override (show the auto preview). Default makes this a
+    /// lightweight migration for pre-feature saves.
+    var customTitle: String?
     /// Full concatenated English story (fallback render + previewing).
     var storyEnFull: String
     /// Full concatenated Traditional Chinese story (fallback render).
@@ -58,6 +63,7 @@ final class SavedStory {
         sentencesJSON: String = "",
         vocabIDs: [UUID],
         titlePreview: String = "",
+        customTitle: String? = nil,
         storyEnFull: String = "",
         storyZhFull: String = "",
         customPromptStored: String = "",
@@ -72,12 +78,24 @@ final class SavedStory {
         self.sentencesJSON = sentencesJSON
         self.vocabIDs = vocabIDs
         self.titlePreview = titlePreview
+        self.customTitle = customTitle
         self.storyEnFull = storyEnFull
         self.storyZhFull = storyZhFull
         self.customPromptStored = customPromptStored
         self.isGenerating = isGenerating
         self.generationFailed = generationFailed
         self.generationFailureReason = generationFailureReason
+    }
+
+    /// The label to show wherever the story's title appears. Prefers the
+    /// user-set `customTitle` (trimmed, non-empty); falls back to the
+    /// `titlePreview` auto-derived from the story body.
+    var displayTitle: String {
+        if let custom = customTitle?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !custom.isEmpty {
+            return custom
+        }
+        return titlePreview
     }
 
     var style: StoryStyle {

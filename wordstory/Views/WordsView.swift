@@ -18,10 +18,6 @@ struct WordsView: View {
     @Binding var showSettings: Bool
     @Query private var allWords: [Word]
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("languageDirection") private var directionRaw = LanguageDirection.enToZh.rawValue
-    private var direction: LanguageDirection {
-        LanguageDirection(rawValue: directionRaw) ?? .enToZh
-    }
 
     @State private var sortOrder: WordSortOrder = .recent
     @State private var showAddSheet = false

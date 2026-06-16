@@ -5,10 +5,10 @@ struct AddWordSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
-    @AppStorage("languageDirection") private var directionRaw = LanguageDirection.enToZh.rawValue
-    private var direction: LanguageDirection {
-        LanguageDirection(rawValue: directionRaw) ?? .enToZh
-    }
+    // App is English-learner only; Words are always en-to-zh. The
+    // direction header used to flip with a Settings toggle that no longer
+    // exists, so this is a constant now.
+    private let direction: LanguageDirection = .enToZh
 
     @State private var singleInput = ""
     @State private var pasteInput = ""

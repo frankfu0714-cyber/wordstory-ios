@@ -585,6 +585,40 @@
         }
       }
     },
+    "saved.vocabulary.label" : {
+      "comment" : "Section label above the chip row that lists the vocabulary words a saved story was generated from.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vocabulary"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詞彙"
+          }
+        }
+      }
+    },
+    "saved.vocabulary.tap_hint" : {
+      "comment" : "VoiceOver hint for a vocabulary chip on a saved-story detail view — tapping opens the word's detail modal.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the word's definition"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟此詞的釋義"
+          }
+        }
+      }
+    },
     "search.placeholder" : {
       "extractionState" : "stale",
       "localizations" : {

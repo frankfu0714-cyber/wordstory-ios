@@ -25,6 +25,15 @@ struct SavedStoryDetail: View {
         return allWords.filter { ids.contains($0.id) }
     }
 
+    /// Vocab in the order the user picked when generating — that's the order
+    /// stored in `story.vocabIDs`. Used by the chip row so a user with a
+    /// stable picking habit always sees the same row layout. Words deleted
+    /// after the save are skipped (`compactMap`).
+    private var vocabInPickOrder: [Word] {
+        let byID = Dictionary(uniqueKeysWithValues: vocab.map { ($0.id, $0) })
+        return story.vocabIDs.compactMap { byID[$0] }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -35,6 +44,13 @@ struct SavedStoryDetail: View {
                 } else if story.generationFailed {
                     failedPlaceholder
                 } else {
+                    // Glanceable chip row so the user can see what words
+                    // this story was built on before deciding to regenerate
+                    // — same set, fresh narrative. Tap a chip to open the
+                    // word's detail modal (custom definition + example).
+                    if !vocabInPickOrder.isEmpty {
+                        vocabularySection
+                    }
                     storyBody
                 }
             }
@@ -240,6 +256,50 @@ struct SavedStoryDetail: View {
                 .font(.caption)
                 .foregroundStyle(Theme.inkQuiet)
         }
+    }
+
+    /// Horizontal scrolling chip row of the words this story was generated
+    /// from. Sits between the meta header and the body so it's the second
+    /// thing the user sees — answering "which words?" before they read.
+    /// Tapping a chip routes through the same `tappedWord` state that the
+    /// inline word highlights use, so the WordDetailModal (with custom
+    /// definition + example) is one tap away.
+    private var vocabularySection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("saved.vocabulary.label")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.5)
+                .foregroundStyle(Theme.inkQuiet)
+                .textCase(.uppercase)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(vocabInPickOrder) { word in
+                        vocabChip(word)
+                    }
+                }
+            }
+        }
+    }
+
+    private func vocabChip(_ word: Word) -> some View {
+        Button {
+            tappedWord = word
+        } label: {
+            Text(word.sourceText)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(word.learned ? Theme.inkQuiet : Color.accentColor)
+                .strikethrough(word.learned, color: Theme.inkQuiet)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule().fill(Color.accentColor.opacity(word.learned ? 0.05 : 0.10))
+                )
+                .overlay(
+                    Capsule().stroke(Color.accentColor.opacity(word.learned ? 0.18 : 0.35), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(Text("saved.vocabulary.tap_hint"))
     }
 
     private func interleaved(_ sentences: [APIService.GenerateResponse.SentencePair]) -> some View {

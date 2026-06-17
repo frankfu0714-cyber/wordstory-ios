@@ -332,6 +332,23 @@
         }
       }
     },
+    "regenerate.title" : {
+      "comment" : "Navigation title for the regenerate-story composer, pushed from a saved story so the user can adjust vocab/style before re-firing.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerate"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新生成"
+          }
+        }
+      }
+    },
     "saved.empty_state" : {
       "localizations" : {
         "en" : {

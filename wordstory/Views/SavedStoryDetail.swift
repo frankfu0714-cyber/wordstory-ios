@@ -7,18 +7,12 @@ import SwiftData
 /// vocabulary `Word` records by id so highlights still work when reopened.
 struct SavedStoryDetail: View {
     let story: SavedStory
-    /// Optional callback for the toolbar "Regenerate" button. The parent
-    /// list owns the dispatch logic (it has the SwiftData context + the
-    /// allWords @Query handy); passing a closure keeps this view stateless
-    /// about the regeneration flow. nil = hide the toolbar button.
-    var onRegenerate: (() -> Void)? = nil
 
     @Environment(\.modelContext) private var modelContext
     @Query private var allWords: [Word]
     @State private var showChinese: Bool = false
     @State private var tappedWord: Word?
     @State private var isEditingTitle: Bool = false
-    @State private var didRegenerate: Bool = false
 
     private var vocab: [Word] {
         let ids = Set(story.vocabIDs)
@@ -73,21 +67,18 @@ struct SavedStoryDetail: View {
             if !story.isGenerating && !story.generationFailed {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 14) {
-                        if onRegenerate != nil {
-                            Button {
-                                onRegenerate?()
-                                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
-                                    didRegenerate = true
-                                }
-                                Task { @MainActor in
-                                    try? await Task.sleep(for: .seconds(2))
-                                    withAnimation { didRegenerate = false }
-                                }
-                            } label: {
-                                Image(systemName: "arrow.triangle.2.circlepath")
-                            }
-                            .accessibilityLabel(Text("saved.regenerate"))
+                        // Regenerate now NAVIGATES to a story-composer
+                        // pre-filled with this story's vocab + style +
+                        // custom prompt instead of firing the generator
+                        // headlessly. User can adjust before hitting
+                        // Generate themselves.
+                        NavigationLink {
+                            RegenerateStoryView(source: story)
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
                         }
+                        .accessibilityLabel(Text("saved.regenerate"))
+
                         Button {
                             isEditingTitle = true
                         } label: {
@@ -96,20 +87,6 @@ struct SavedStoryDetail: View {
                         .accessibilityLabel(Text("saved.title.edit"))
                     }
                 }
-            }
-        }
-        .overlay(alignment: .bottom) {
-            if didRegenerate {
-                Text("saved.regenerate.toast")
-                    .font(.subheadline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .background(Theme.ink.opacity(0.92))
-                    .clipShape(Capsule())
-                    .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
-                    .padding(.bottom, 32)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .sheet(isPresented: $isEditingTitle) {

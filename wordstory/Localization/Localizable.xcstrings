@@ -382,6 +382,57 @@
         }
       }
     },
+    "saved.regenerate" : {
+      "comment" : "Context-menu / toolbar action that re-runs the generator over the same vocab as the source story — produces a new saved story for spaced-repetition practice.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerate with same words"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用相同單字重新生成"
+          }
+        }
+      }
+    },
+    "saved.regenerate.no_vocab" : {
+      "comment" : "Toast shown when regenerate is tapped but every vocab word the source story used has been deleted.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vocab no longer in your list"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原本的單字已不在清單中"
+          }
+        }
+      }
+    },
+    "saved.regenerate.toast" : {
+      "comment" : "Toast shown after the regenerate action — confirms a new variation is being generated in the background.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generating a new variation…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在生成新的版本…"
+          }
+        }
+      }
+    },
     "saved.retry" : {
       "comment" : "Retry button on a failed saved-story row.",
       "localizations" : {

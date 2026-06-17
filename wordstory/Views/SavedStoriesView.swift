@@ -12,6 +12,9 @@ struct SavedStoriesView: View {
 
     /// Drives the title-edit sheet via `.sheet(item:)`. nil = sheet closed.
     @State private var editingStory: SavedStory?
+    /// Brief bottom toast (e.g. "Generating a new variation…" after the
+    /// regenerate action fires). Same shape as the toast in `WordsView`.
+    @State private var toastMessage: String?
 
     /// In-progress generations sort to the top so the user sees them while
     /// the background Task is still running; everything else falls back to
@@ -33,7 +36,9 @@ struct SavedStoriesView: View {
                     List {
                         ForEach(sortedStories) { story in
                             NavigationLink {
-                                SavedStoryDetail(story: story)
+                                SavedStoryDetail(story: story) {
+                                    regenerate(story)
+                                }
                             } label: {
                                 row(for: story)
                             }
@@ -59,6 +64,18 @@ struct SavedStoriesView: View {
                                     .tint(.blue)
                                 }
                             }
+                            // Long-press → regenerate. Gated to completed
+                            // stories: an in-flight or failed source has no
+                            // useful vocab provenance to copy.
+                            .contextMenu {
+                                if !story.isGenerating && !story.generationFailed {
+                                    Button {
+                                        regenerate(story)
+                                    } label: {
+                                        Label("saved.regenerate", systemImage: "arrow.triangle.2.circlepath")
+                                    }
+                                }
+                            }
                         }
                     }
                     .scrollContentBackground(.hidden)
@@ -67,6 +84,21 @@ struct SavedStoriesView: View {
             }
             .navigationTitle(String(localized: "saved.tab", locale: locale))
             .navigationBarTitleDisplayMode(.large)
+            .overlay(alignment: .bottom) {
+                if let toastMessage {
+                    Text(toastMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(Theme.ink.opacity(0.92))
+                        .clipShape(Capsule())
+                        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                        .padding(.bottom, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.42, dampingFraction: 0.85), value: toastMessage)
             .sheet(item: $editingStory) { story in
                 TitleEditSheet(story: story)
             }
@@ -228,6 +260,58 @@ struct SavedStoriesView: View {
     private func delete(_ story: SavedStory) {
         modelContext.delete(story)
         try? modelContext.save()
+    }
+
+    /// Spawns a brand-new generation against the same vocab/style/direction
+    /// as `source`. Used for spaced repetition: the user reads variation A,
+    /// then taps Regenerate to get variation B over the same words. Inserts
+    /// the placeholder immediately (so the user sees a "Generating…" row at
+    /// the top of the list) and fires `runGeneration` in the background.
+    /// The original `source` is left untouched.
+    private func regenerate(_ source: SavedStory) {
+        let ids = Set(source.vocabIDs)
+        let texts = allWords.filter { ids.contains($0.id) }.map(\.sourceText)
+        guard !texts.isEmpty else {
+            showToast(String(localized: "saved.regenerate.no_vocab"))
+            return
+        }
+
+        let placeholder = SavedStory(
+            style: source.style,
+            direction: source.direction,
+            vocabIDs: source.vocabIDs,
+            customPromptStored: source.customPromptStored,
+            isGenerating: true
+        )
+        modelContext.insert(placeholder)
+        try? modelContext.save()
+
+        showToast(String(localized: "saved.regenerate.toast"))
+
+        let id = placeholder.id
+        let st = source.style
+        let dir = source.direction
+        let prompt = source.customPromptStored
+        let ctx = modelContext
+
+        Task { @MainActor in
+            await runGeneration(
+                id: id,
+                texts: texts,
+                style: st,
+                customPrompt: prompt,
+                direction: dir,
+                context: ctx
+            )
+        }
+    }
+
+    private func showToast(_ message: String) {
+        toastMessage = message
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            if toastMessage == message { toastMessage = nil }
+        }
     }
 
     /// Reset a failed row to in-flight and re-dispatch the same generation

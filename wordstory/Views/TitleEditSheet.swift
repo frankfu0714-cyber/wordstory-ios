@@ -26,6 +26,12 @@ struct TitleEditSheet: View {
                         .autocorrectionDisabled()
                         .submitLabel(.done)
                         .onSubmit(commit)
+                        // System TextField defaults to `.label`, which in
+                        // dark-system-mode renders near-white and disappears
+                        // against the cream sheet. Pin both the typed text
+                        // and the cursor tint to the brand inks.
+                        .foregroundStyle(Theme.ink)
+                        .tint(Color.accentColor)
                 }
                 .listRowBackground(Theme.paper)
             }
@@ -35,11 +41,28 @@ struct TitleEditSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
+                    // Explicit accent + semibold so Cancel stays readable
+                    // on cream; default tint renders a near-pastel pink
+                    // against this background.
                     Button("action.cancel") { dismiss() }
+                        .foregroundStyle(Color.accentColor)
+                        .fontWeight(.semibold)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("saved.title.done") { commit() }
-                        .fontWeight(.semibold)
+                    // Primary action — filled accent capsule. Beats the
+                    // pencil-pale default text button and makes the commit
+                    // step unmistakable.
+                    Button {
+                        commit()
+                    } label: {
+                        Text("saved.title.done")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(Color.accentColor))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

@@ -208,6 +208,12 @@ struct WordsView: View {
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .disabled(isAdding)
+                // Default TextField label color is `.label`, which on iOS in
+                // dark-system-mode renders near-white and disappears against
+                // our cream `Theme.background`. Pin both the typed text and
+                // the cursor tint to the brand inks explicitly.
+                .foregroundStyle(Theme.ink)
+                .tint(Color.accentColor)
             if isAdding {
                 ProgressView()
                     .controlSize(.small)
@@ -236,8 +242,12 @@ struct WordsView: View {
     }
 
     /// Autocomplete dropdown rendered directly under `typeToAddBar`.
-    /// Bounded to 280pt so a wide prefix match (e.g. "a") doesn't push the
+    /// Bounded to 360pt so a wide prefix match (e.g. "a") doesn't push the
     /// word list off-screen — the inner `ScrollView` handles overflow.
+    /// `layoutPriority(1)` keeps the dropdown from being squeezed by the
+    /// flexible-fill List underneath when the keyboard is up; with rows at
+    /// ~30pt tall, this leaves room for ~8 visible suggestions even when
+    /// the keyboard claims half the screen.
     private var suggestionsList: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
@@ -247,13 +257,13 @@ struct WordsView: View {
                     } label: {
                         HStack {
                             Text(word)
-                                .font(Theme.serif(16))
+                                .font(Theme.serif(15))
                                 .foregroundStyle(Theme.ink)
                                 .lineLimit(1)
                             Spacer()
                         }
                         .padding(.horizontal, 14)
-                        .padding(.vertical, 9)
+                        .padding(.vertical, 6)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -263,7 +273,8 @@ struct WordsView: View {
                 }
             }
         }
-        .frame(maxHeight: 280)
+        .frame(maxHeight: 360)
+        .layoutPriority(1)
         .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(

@@ -29,6 +29,11 @@ struct DefinitionEditSheet: View {
                     TextField("definition.edit.placeholder", text: $draft, axis: .vertical)
                         .lineLimit(3...8)
                         .focused($fieldFocused)
+                        // Pin typed text + cursor tint to brand inks —
+                        // default `.label` renders near-white on cream in
+                        // dark-system-mode and disappears.
+                        .foregroundStyle(Theme.ink)
+                        .tint(Color.accentColor)
                 }
                 .listRowBackground(Theme.paper)
 
@@ -70,11 +75,26 @@ struct DefinitionEditSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
+                    // Explicit accent + semibold so Cancel stays readable
+                    // on cream; default tint goes near-pastel pink here.
                     Button("action.cancel") { dismiss() }
+                        .foregroundStyle(Color.accentColor)
+                        .fontWeight(.semibold)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("definition.edit.save") { commit() }
-                        .fontWeight(.semibold)
+                    // Primary action — filled accent capsule. Mirrors the
+                    // treatment on `TitleEditSheet.Done`.
+                    Button {
+                        commit()
+                    } label: {
+                        Text("definition.edit.save")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(Color.accentColor))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .onAppear { fieldFocused = true }

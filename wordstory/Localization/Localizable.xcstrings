@@ -318,6 +318,7 @@
     },
     "length.brief" : {
       "comment" : "Brief length option in the StoryComposerForm length picker — overrides the per-style word target with a tight ~40–60 word ceiling.",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -352,6 +353,7 @@
     },
     "length.standard" : {
       "comment" : "Standard length option in the StoryComposerForm length picker — preserves the per-style word target (~150 words).",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1382,13 +1384,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "~200 words, journalistic"
+            "value" : "Journalistic, neutral tone"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "約 200 字，新聞體"
+            "value" : "新聞體，客觀語氣"
           }
         }
       }
@@ -1416,13 +1418,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Short, vivid, looser usage"
+            "value" : "Vivid imagery, looser usage"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "短小生動，用法寬鬆"
+            "value" : "意象鮮明，用法寬鬆"
           }
         }
       }
@@ -1450,13 +1452,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "~150 words, one scene"
+            "value" : "One scene, sensory detail"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "約 150 字，一個場景"
+            "value" : "一個場景，感官細節"
           }
         }
       }

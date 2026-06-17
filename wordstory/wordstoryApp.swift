@@ -9,6 +9,16 @@ struct WordstoryApp: App {
     /// gives us same-session updates for the strings that respect it.
     @AppStorage("uiLanguage") private var uiLanguage: String = ""
 
+    /// Pin nav-title text to brand ink. Without this, large titles inherit
+    /// `.label`, which becomes near-white when the device is in dark mode
+    /// — invisible against our cream `Theme.background`. Mirrors the values
+    /// in `Theme.ink` (sRGB 0.16 / 0.145 / 0.125).
+    init() {
+        let ink = UIColor(red: 0.16, green: 0.145, blue: 0.125, alpha: 1.0)
+        UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: ink]
+        UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: ink]
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

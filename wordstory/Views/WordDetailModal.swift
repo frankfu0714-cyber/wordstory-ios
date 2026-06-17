@@ -6,6 +6,8 @@ struct WordDetailModal: View {
     @Environment(\.dismiss) private var dismiss
     let word: Word
 
+    @State private var isEditingDefinition = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -30,11 +32,23 @@ struct WordDetailModal: View {
                     }
                     .buttonStyle(ScaleButtonStyle())
                     .accessibilityLabel(Text("speech.button.aria"))
+                    Button {
+                        isEditingDefinition = true
+                    } label: {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .accessibilityLabel(Text("definition.edit.title"))
                 }
                 .padding(.top, 4)
 
-                if !word.definition.isEmpty {
-                    Text(word.definition)
+                let shown = word.effectiveDefinition
+                if !shown.isEmpty {
+                    Text(shown)
                         .font(.body)
                         .foregroundStyle(Theme.inkSoft)
                         .lineSpacing(3)
@@ -62,6 +76,9 @@ struct WordDetailModal: View {
         }
         .background(Theme.background.ignoresSafeArea())
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $isEditingDefinition) {
+            DefinitionEditSheet(word: word)
+        }
     }
 }
 

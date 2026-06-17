@@ -41,6 +41,12 @@ struct WordsView: View {
     // ---- "Choose English word" picker ----
     @State private var synonymsContext: SynonymsContext?
 
+    // ---- Definition editor ----
+    /// The word whose Chinese meaning is being edited. Driving the sheet
+    /// from here (rather than per-row state) keeps the sheet alive even
+    /// when the underlying List row gets recycled.
+    @State private var editingDefinitionWord: Word?
+
     /// Identifiable wrapper so `.sheet(item:)` re-presents whenever the user
     /// taps a different Chinese suggestion. The `id` is the term itself, so
     /// tapping the same term twice in a row reuses the same sheet instance.
@@ -91,6 +97,9 @@ struct WordsView: View {
                                         onToggleLearned: { toggleLearned(word) },
                                         onRetryFetch: {
                                             Task { @MainActor in await refetch(word) }
+                                        },
+                                        onEditDefinition: {
+                                            editingDefinitionWord = word
                                         }
                                     )
                                         .id(word.id)
@@ -175,6 +184,9 @@ struct WordsView: View {
                     // add flow with the user's chosen headword.
                     Task { @MainActor in await addEnglish(englishWord) }
                 }
+            }
+            .sheet(item: $editingDefinitionWord) { word in
+                DefinitionEditSheet(word: word)
             }
         }
     }
@@ -517,6 +529,7 @@ private struct WordRow: View {
     let isFlashed: Bool
     let onToggleLearned: () -> Void
     let onRetryFetch: () -> Void
+    let onEditDefinition: () -> Void
 
     @State private var revealed = false
     @State private var hideTask: Task<Void, Never>?
@@ -633,8 +646,9 @@ private struct WordRow: View {
         // Only the definition. The example sentence is preserved in the data
         // model and still rendered in `WordDetailModal` from the Story tab —
         // the flashcard itself stays clean: front = word, back = meaning.
-        // If the most recent fetch failed, swap the definition slot for an
-        // inline retry button that doesn't conflict with the card-flip tap.
+        // If the most recent fetch failed AND the user hasn't typed an
+        // override, swap the definition slot for an inline retry + "add your
+        // own meaning" row that doesn't conflict with the card-flip tap.
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(word.sourceText)
@@ -648,69 +662,144 @@ private struct WordRow: View {
                         .foregroundStyle(.green.opacity(0.7))
                         .font(.system(size: 14))
                 }
+                // Reserve trailing space for the floating edit button. The
+                // button itself is rendered in `.overlay` so its tap is
+                // consumed before it reaches the parent's flip gesture —
+                // mirrors the speaker button's pattern on the front face.
+                Color.clear.frame(width: 32, height: 28)
             }
-            if !word.definition.isEmpty {
-                Text(word.definition)
+            let displayed = word.effectiveDefinition
+            if !displayed.isEmpty {
+                Text(displayed)
                     .font(Theme.serif(18))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(6)
             } else if word.definitionFetchFailed {
                 retryRow
             } else {
-                Text("detail.no_definition")
-                    .font(.subheadline.italic())
-                    .foregroundStyle(Theme.inkQuiet)
+                emptyDefinitionRow
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 8)
         .opacity(word.learned ? 0.6 : 1.0)
+        // Pencil shortcut to override the Chinese meaning. Always available
+        // on the back face so users can also tweak entries that already have
+        // a dictionary definition. Wrapped in `.highPriorityGesture` rather
+        // than a Button because the parent ZStack's `.onTapGesture` wins
+        // tap routing against `.buttonStyle(.plain)` Buttons sitting under
+        // a rotation3DEffect — high-priority gesture explicitly outranks
+        // the parent tap.
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: "square.and.pencil")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
+                .accessibilityLabel(Text("definition.edit.title"))
+                .accessibilityAddTraits(.isButton)
+                .padding(.top, -2)
+                .highPriorityGesture(
+                    TapGesture().onEnded { onEditDefinition() }
+                )
+        }
     }
 
-    /// Inline retry control shown on the back face when the most recent
-    /// fetch failed. Implemented as a Button so its tap is consumed first
-    /// and doesn't bubble up to the parent's flip gesture.
-    private var retryRow: some View {
+    /// Shown when the word has no definition AND wasn't marked as failed
+    /// (e.g. legacy rows). Same "Add your own meaning" entry point as the
+    /// failed state — the two paths converge on the editor sheet.
+    private var emptyDefinitionRow: some View {
         Button {
-            guard !isRetrying else { return }
-            isRetrying = true
-            onRetryFetch()
-            // Optimistic: clear the "retrying" flag once the model has had
-            // a moment to flip back (the parent saves on the main actor
-            // after the await completes). 1.5s is a small ceiling — the
-            // user sees feedback even on instant successes.
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(1500))
-                isRetrying = false
-            }
+            onEditDefinition()
         } label: {
             HStack(spacing: 8) {
-                if isRetrying {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(Color.orange.opacity(0.85))
-                }
+                Image(systemName: "square.and.pencil")
+                    .foregroundStyle(Color.accentColor)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("words.fetch_failed")
-                        .font(.footnote)
-                        .foregroundStyle(Theme.danger)
-                    Text("action.retry_fetch")
-                        .font(.caption2)
+                    Text("detail.no_definition")
+                        .font(.subheadline.italic())
                         .foregroundStyle(Theme.inkQuiet)
+                    Text("definition.add_your_own")
+                        .font(.caption2)
+                        .foregroundStyle(Color.accentColor)
                 }
                 Spacer()
-                Image(systemName: "arrow.clockwise")
-                    .foregroundStyle(Color.accentColor)
-                    .font(.footnote)
             }
             .padding(.vertical, 6)
             .padding(.horizontal, 10)
-            .background(Color.orange.opacity(0.08))
+            .background(Color.accentColor.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    /// Inline retry control shown on the back face when the most recent
+    /// fetch failed. Implemented as Buttons so taps are consumed first and
+    /// don't bubble up to the parent's flip gesture. The second action —
+    /// "Add your own meaning" — converges on the same DefinitionEditSheet
+    /// the pencil opens, so users who add a word ECDICT doesn't know
+    /// (or who don't have network) can still finish capturing it.
+    private var retryRow: some View {
+        VStack(spacing: 6) {
+            Button {
+                guard !isRetrying else { return }
+                isRetrying = true
+                onRetryFetch()
+                // Optimistic: clear the "retrying" flag once the model has had
+                // a moment to flip back (the parent saves on the main actor
+                // after the await completes). 1.5s is a small ceiling — the
+                // user sees feedback even on instant successes.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(1500))
+                    isRetrying = false
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    if isRetrying {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(Color.orange.opacity(0.85))
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("words.fetch_failed")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.danger)
+                        Text("action.retry_fetch")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.inkQuiet)
+                    }
+                    Spacer()
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundStyle(Color.accentColor)
+                        .font(.footnote)
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .background(Color.orange.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                onEditDefinition()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "square.and.pencil")
+                        .foregroundStyle(Color.accentColor)
+                    Text("definition.add_your_own")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                    Spacer()
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .background(Color.accentColor.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     // MARK: - Flip control

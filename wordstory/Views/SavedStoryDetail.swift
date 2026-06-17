@@ -301,17 +301,23 @@ struct SavedStoryDetail: View {
     private func chineseCandidates(for word: Word) -> [String] {
         let posPrefixPattern = #"^(?:[a-zA-Z]+\.|\[[^\]]+\])\s*"#
         var out: Set<String> = []
-        for line in word.definition.components(separatedBy: "\n") {
-            let stripped = line.replacingOccurrences(
-                of: posPrefixPattern,
-                with: "",
-                options: .regularExpression
-            )
-            let delim = CharacterSet(charactersIn: ",;、，；/／")
-            for raw in stripped.components(separatedBy: delim) {
-                let s = raw.trimmingCharacters(in: .whitespaces)
-                guard (1...8).contains(s.count), containsCJK(s) else { continue }
-                out.insert(s)
+        // Include both the dictionary definition and any user-typed override
+        // so highlights still light up when the user has overridden the
+        // meaning of a word that appeared in the story.
+        let sources = [word.definition, word.customDefinition ?? ""]
+        for source in sources where !source.isEmpty {
+            for line in source.components(separatedBy: "\n") {
+                let stripped = line.replacingOccurrences(
+                    of: posPrefixPattern,
+                    with: "",
+                    options: .regularExpression
+                )
+                let delim = CharacterSet(charactersIn: ",;、，；/／")
+                for raw in stripped.components(separatedBy: delim) {
+                    let s = raw.trimmingCharacters(in: .whitespaces)
+                    guard (1...8).contains(s.count), containsCJK(s) else { continue }
+                    out.insert(s)
+                }
             }
         }
         return Array(out)

@@ -129,6 +129,108 @@
         }
       }
     },
+    "definition.add_your_own" : {
+      "comment" : "CTA on the flashcard back face when the word has no definition — opens the editor sheet so the user can type their own Chinese meaning.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add your own meaning"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自己填寫釋義"
+          }
+        }
+      }
+    },
+    "definition.edit.dictionary_label" : {
+      "comment" : "Label above the original ECDICT/API definition in the editor sheet — shown so users can see what they're overriding.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dictionary entry"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詞典釋義"
+          }
+        }
+      }
+    },
+    "definition.edit.placeholder" : {
+      "comment" : "Placeholder for the definition-edit TextField.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type your own Chinese meaning…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入你自己的中文釋義…"
+          }
+        }
+      }
+    },
+    "definition.edit.reset" : {
+      "comment" : "Reset-to-dictionary button on the definition-edit sheet — clears the user's override.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to dictionary"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "還原為詞典釋義"
+          }
+        }
+      }
+    },
+    "definition.edit.save" : {
+      "comment" : "Save button on the definition-edit sheet.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "儲存"
+          }
+        }
+      }
+    },
+    "definition.edit.title" : {
+      "comment" : "Navigation title / accessibility label for the definition-edit sheet.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit meaning"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編輯釋義"
+          }
+        }
+      }
+    },
     "detail.no_definition" : {
       "localizations" : {
         "en" : {

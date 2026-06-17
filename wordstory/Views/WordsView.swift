@@ -242,38 +242,43 @@ struct WordsView: View {
     }
 
     /// Autocomplete dropdown rendered directly under `typeToAddBar`.
-    /// Bounded to 540pt so a very wide prefix match (e.g. "a") still doesn't
-    /// shove the word list completely off-screen, but a typical 5–6-character
-    /// prefix surfaces ~12+ suggestions without scrolling. `layoutPriority(2)`
-    /// keeps the dropdown ahead of the flexible-fill List underneath when the
-    /// keyboard is up — the prior 360pt cap was producing only ~4 visible
-    /// rows in that competition, even with priority(1).
+    ///
+    /// Sizing: plain `VStack` (not `ScrollView + LazyVStack`) so the dropdown's
+    /// intrinsic height tracks the content — small result counts render as
+    /// a small box, not a tall mostly-empty rectangle, and `layoutPriority(2)`
+    /// can actually win against the List's flex claim because the dropdown's
+    /// ideal is now a concrete number rather than "flex." The previous
+    /// `ScrollView`-based design lost the flex-vs-flex layout fight and was
+    /// clamped to ~5 visible rows even with the cap at 540pt.
+    ///
+    /// The `frame(maxHeight: 540)` safety net handles the 20-result max from
+    /// `searchPrefix` (~600pt of content): the rounded `clipShape` below
+    /// clips the bottom 1-2 rows in that worst case. Users with a wide prefix
+    /// can refine; common prefixes return < 18 matches and fit comfortably.
     private var suggestionsList: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(suggestions.enumerated()), id: \.element) { index, word in
-                    Button {
-                        selectSuggestion(word)
-                    } label: {
-                        HStack {
-                            Text(word)
-                                .font(Theme.serif(15))
-                                .foregroundStyle(Theme.ink)
-                                .lineLimit(1)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .contentShape(Rectangle())
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(suggestions.enumerated()), id: \.element) { index, word in
+                Button {
+                    selectSuggestion(word)
+                } label: {
+                    HStack {
+                        Text(word)
+                            .font(Theme.serif(15))
+                            .foregroundStyle(Theme.ink)
+                            .lineLimit(1)
+                        Spacer()
                     }
-                    .buttonStyle(.plain)
-                    if index < suggestions.count - 1 {
-                        Divider().opacity(0.45)
-                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                if index < suggestions.count - 1 {
+                    Divider().opacity(0.45)
                 }
             }
         }
-        .frame(maxHeight: 540)
+        .frame(maxHeight: 540, alignment: .top)
         .layoutPriority(2)
         .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

@@ -47,32 +47,38 @@ struct SavedStoryDetail: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Regenerate + pencil only make sense once there's a story to
-            // act on; hide them on placeholder/failed rows.
+            // act on; hide them on placeholder/failed rows. Both buttons
+            // share a SINGLE ToolbarItem (wrapping an HStack) rather than
+            // two sibling ToolbarItems, because @ToolbarContentBuilder on
+            // iOS 26 has been observed to drop the second sibling when the
+            // inline title takes most of the bar width (anything narrower
+            // than the Pro Max) — packing them into one slot keeps both
+            // visible and lets the inline title shrink instead.
             if !story.isGenerating && !story.generationFailed {
-                if let onRegenerate {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            onRegenerate()
-                            withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
-                                didRegenerate = true
-                            }
-                            Task { @MainActor in
-                                try? await Task.sleep(for: .seconds(2))
-                                withAnimation { didRegenerate = false }
-                            }
-                        } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                        }
-                        .accessibilityLabel(Text("saved.regenerate"))
-                    }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        isEditingTitle = true
-                    } label: {
-                        Image(systemName: "pencil")
+                    HStack(spacing: 14) {
+                        if onRegenerate != nil {
+                            Button {
+                                onRegenerate?()
+                                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                                    didRegenerate = true
+                                }
+                                Task { @MainActor in
+                                    try? await Task.sleep(for: .seconds(2))
+                                    withAnimation { didRegenerate = false }
+                                }
+                            } label: {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                            }
+                            .accessibilityLabel(Text("saved.regenerate"))
+                        }
+                        Button {
+                            isEditingTitle = true
+                        } label: {
+                            Image(systemName: "pencil")
+                        }
+                        .accessibilityLabel(Text("saved.title.edit"))
                     }
-                    .accessibilityLabel(Text("saved.title.edit"))
                 }
             }
         }

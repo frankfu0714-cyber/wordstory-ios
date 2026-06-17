@@ -242,12 +242,12 @@ struct WordsView: View {
     }
 
     /// Autocomplete dropdown rendered directly under `typeToAddBar`.
-    /// Bounded to 360pt so a wide prefix match (e.g. "a") doesn't push the
-    /// word list off-screen — the inner `ScrollView` handles overflow.
-    /// `layoutPriority(1)` keeps the dropdown from being squeezed by the
-    /// flexible-fill List underneath when the keyboard is up; with rows at
-    /// ~30pt tall, this leaves room for ~8 visible suggestions even when
-    /// the keyboard claims half the screen.
+    /// Bounded to 540pt so a very wide prefix match (e.g. "a") still doesn't
+    /// shove the word list completely off-screen, but a typical 5–6-character
+    /// prefix surfaces ~12+ suggestions without scrolling. `layoutPriority(2)`
+    /// keeps the dropdown ahead of the flexible-fill List underneath when the
+    /// keyboard is up — the prior 360pt cap was producing only ~4 visible
+    /// rows in that competition, even with priority(1).
     private var suggestionsList: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
@@ -273,8 +273,8 @@ struct WordsView: View {
                 }
             }
         }
-        .frame(maxHeight: 360)
-        .layoutPriority(1)
+        .frame(maxHeight: 540)
+        .layoutPriority(2)
         .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(

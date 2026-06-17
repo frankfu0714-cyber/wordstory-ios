@@ -76,6 +76,11 @@ struct APIService {
         let style: String
         let customPrompt: String
         let direction: String
+        /// `"standard"` or `"brief"` — overrides the style's word target
+        /// with a tight ~40–60 word ceiling when set to `"brief"`. Omitted
+        /// from the encoded payload for legacy clients ("standard") so the
+        /// server defaults to existing behavior.
+        let length: String?
     }
 
     struct GenerateResponse: Codable {
@@ -114,13 +119,18 @@ struct APIService {
         words: [String],
         style: StoryStyle,
         customPrompt: String,
-        direction: LanguageDirection
+        direction: LanguageDirection,
+        length: StoryLength = .standard
     ) async throws -> GenerateResponse {
         let payload = GeneratePayload(
             words: words.map { GeneratePayload.WordEntry(word: $0) },
             style: style.rawValue,
             customPrompt: customPrompt,
-            direction: direction.rawValue
+            direction: direction.rawValue,
+            // Only send the length field when the user explicitly picked
+            // brief — keeps the wire payload backward-compatible with
+            // server versions that don't know about length yet.
+            length: length == .standard ? nil : length.rawValue
         )
         return try await post(path: "/api/generate", body: payload)
     }

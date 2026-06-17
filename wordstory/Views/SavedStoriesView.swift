@@ -269,6 +269,7 @@ struct SavedStoriesView: View {
         let st = story.style
         let dir = story.direction
         let prompt = story.customPromptStored
+        let len = story.length
         let ctx = modelContext
 
         Task { @MainActor in
@@ -278,6 +279,7 @@ struct SavedStoriesView: View {
                 style: st,
                 customPrompt: prompt,
                 direction: dir,
+                length: len,
                 context: ctx
             )
         }

@@ -316,6 +316,57 @@
         }
       }
     },
+    "length.brief" : {
+      "comment" : "Brief length option in the StoryComposerForm length picker — overrides the per-style word target with a tight ~40–60 word ceiling.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brief"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "簡短"
+          }
+        }
+      }
+    },
+    "length.label" : {
+      "comment" : "Section label above the Standard/Brief length picker in StoryComposerForm.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Length"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "長度"
+          }
+        }
+      }
+    },
+    "length.standard" : {
+      "comment" : "Standard length option in the StoryComposerForm length picker — preserves the per-style word target (~150 words).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標準"
+          }
+        }
+      }
+    },
     "nav.settings" : {
       "localizations" : {
         "en" : {
@@ -418,6 +469,7 @@
     },
     "saved.regenerate.no_vocab" : {
       "comment" : "Toast shown when regenerate is tapped but every vocab word the source story used has been deleted.",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -435,6 +487,7 @@
     },
     "saved.regenerate.toast" : {
       "comment" : "Toast shown after the regenerate action — confirms a new variation is being generated in the background.",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

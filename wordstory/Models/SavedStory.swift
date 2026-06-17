@@ -44,6 +44,10 @@ final class SavedStory {
     /// generation can reconstitute the exact request. Empty for the
     /// built-in styles. Default makes this a lightweight migration.
     var customPromptStored: String = ""
+    /// Raw value of `StoryLength` (`standard` / `brief`). Defaults to the
+    /// pre-feature value so legacy rows decode as `.standard` and the
+    /// regenerate flow preserves whichever length the source story used.
+    var lengthRaw: String = StoryLength.standard.rawValue
     /// True while the API call is in-flight. The Saved tab shows a spinner
     /// row and the detail view shows a "Generating…" placeholder. Cleared
     /// to false once the call resolves (success or failure).
@@ -67,6 +71,7 @@ final class SavedStory {
         storyEnFull: String = "",
         storyZhFull: String = "",
         customPromptStored: String = "",
+        length: StoryLength = .standard,
         isGenerating: Bool = false,
         generationFailed: Bool = false,
         generationFailureReason: String? = nil
@@ -82,6 +87,7 @@ final class SavedStory {
         self.storyEnFull = storyEnFull
         self.storyZhFull = storyZhFull
         self.customPromptStored = customPromptStored
+        self.lengthRaw = length.rawValue
         self.isGenerating = isGenerating
         self.generationFailed = generationFailed
         self.generationFailureReason = generationFailureReason
@@ -104,6 +110,10 @@ final class SavedStory {
 
     var direction: LanguageDirection {
         LanguageDirection(rawValue: directionRaw) ?? .enToZh
+    }
+
+    var length: StoryLength {
+        StoryLength(rawValue: lengthRaw) ?? .standard
     }
 
     /// Decoded sentence pairs. Returns an empty array if the stored JSON is

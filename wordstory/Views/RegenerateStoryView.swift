@@ -18,12 +18,14 @@ struct RegenerateStoryView: View {
     @State private var selectedIDs: Set<UUID>
     @State private var style: StoryStyle
     @State private var customPrompt: String
+    @State private var length: StoryLength
 
     init(source: SavedStory) {
         self.source = source
         _selectedIDs = State(initialValue: Set(source.vocabIDs))
         _style = State(initialValue: source.style)
         _customPrompt = State(initialValue: source.customPromptStored)
+        _length = State(initialValue: source.length)
     }
 
     var body: some View {
@@ -31,6 +33,7 @@ struct RegenerateStoryView: View {
             selectedIDs: $selectedIDs,
             style: $style,
             customPrompt: $customPrompt,
+            length: $length,
             onGenerated: { dismiss() }
         )
         .navigationTitle("regenerate.title")

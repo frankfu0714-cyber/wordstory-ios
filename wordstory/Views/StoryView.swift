@@ -52,13 +52,15 @@ struct StoryView: View {
     @State private var selectedIDs: Set<UUID> = []
     @State private var style: StoryStyle = .shortStory
     @State private var customPrompt = ""
+    @State private var length: StoryLength = .standard
 
     var body: some View {
         NavigationStack {
             StoryComposerForm(
                 selectedIDs: $selectedIDs,
                 style: $style,
-                customPrompt: $customPrompt
+                customPrompt: $customPrompt,
+                length: $length
             )
             .navigationTitle(String(localized: "tab.story", locale: locale))
             .navigationBarTitleDisplayMode(.large)
@@ -85,6 +87,7 @@ func runGeneration(
     style: StoryStyle,
     customPrompt: String,
     direction: LanguageDirection,
+    length: StoryLength = .standard,
     context: ModelContext
 ) async {
     let fd = FetchDescriptor<SavedStory>(predicate: #Predicate { $0.id == id })
@@ -93,7 +96,8 @@ func runGeneration(
             words: texts,
             style: style,
             customPrompt: customPrompt,
-            direction: direction
+            direction: direction,
+            length: length
         )
         print(String(format: "[StoryView] generated: sentences=%d, en=%d chars, zh=%d chars",
                      response.sentences?.count ?? 0,

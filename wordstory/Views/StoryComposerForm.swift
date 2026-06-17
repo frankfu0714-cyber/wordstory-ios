@@ -19,6 +19,7 @@ struct StoryComposerForm: View {
     @Binding var selectedIDs: Set<UUID>
     @Binding var style: StoryStyle
     @Binding var customPrompt: String
+    @Binding var length: StoryLength
 
     /// Called immediately after the placeholder `SavedStory` is inserted +
     /// the background generation task is dispatched. The Story tab leaves
@@ -39,6 +40,7 @@ struct StoryComposerForm: View {
             VStack(alignment: .leading, spacing: 18) {
                 selectorSection
                 styleSection
+                lengthSection
                 if style == .custom {
                     customPromptField
                 }
@@ -190,6 +192,43 @@ struct StoryComposerForm: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: - Length picker
+
+    /// Segmented Standard/Brief picker. Standard preserves the per-style
+    /// word target (~150 words). Brief overrides it with a ~40–60 word
+    /// ceiling so the user can avoid padded output when only a few vocab
+    /// words are selected.
+    private var lengthSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            sectionLabel("length.label")
+            HStack(spacing: 8) {
+                ForEach(StoryLength.allCases) { l in
+                    lengthCard(for: l)
+                }
+            }
+        }
+    }
+
+    private func lengthCard(for l: StoryLength) -> some View {
+        let isSelected = length == l
+        return Button {
+            length = l
+        } label: {
+            Text(LocalizedStringKey(l.titleKeyString))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(isSelected ? Color.white : Theme.inkSoft)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 9)
+                .background(
+                    Capsule().fill(isSelected ? Color.accentColor : Theme.paper)
+                )
+                .overlay(
+                    Capsule().stroke(isSelected ? Color.accentColor : Theme.rule, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
     private var customPromptField: some View {
         TextField("story.custom.placeholder", text: $customPrompt, axis: .vertical)
             .lineLimit(2...4)
@@ -267,6 +306,7 @@ struct StoryComposerForm: View {
             direction: direction,
             vocabIDs: vocab.map(\.id),
             customPromptStored: style == .custom ? promptValue : "",
+            length: length,
             isGenerating: true
         )
         modelContext.insert(placeholder)
@@ -277,6 +317,7 @@ struct StoryComposerForm: View {
         let texts = vocab.map(\.sourceText)
         let st = style
         let dir = direction
+        let len = length
         let id = placeholder.id
         let ctx = modelContext
 
@@ -287,6 +328,7 @@ struct StoryComposerForm: View {
                 style: st,
                 customPrompt: promptValue,
                 direction: dir,
+                length: len,
                 context: ctx
             )
         }

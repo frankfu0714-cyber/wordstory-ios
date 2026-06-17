@@ -18,10 +18,12 @@ struct WordsView: View {
     @Binding var showSettings: Bool
     @Query private var allWords: [Word]
     @Environment(\.modelContext) private var modelContext
-    /// See StoryView for the rationale — navigationTitle bridging on
-    /// iOS 17/18 occasionally pins to the bundle locale; resolving via
-    /// the env locale keeps the title in sync with same-session Settings
-    /// language switches.
+    /// Resolve the title against the explicit env locale so it refreshes
+    /// when the user switches language in Settings without a relaunch.
+    /// The title now lives in the view body (see `pinnedTitle`) rather
+    /// than in `.navigationTitle`, because the large-title display mode
+    /// auto-collapses when scroll gestures inside the autocomplete
+    /// dropdown bubble up to the saved-words List.
     @Environment(\.locale) private var locale
 
     @State private var sortOrder: WordSortOrder = .recent
@@ -77,6 +79,7 @@ struct WordsView: View {
             ZStack(alignment: .bottom) {
                 Theme.background.ignoresSafeArea()
                 VStack(spacing: 0) {
+                    pinnedTitle
                     typeToAddBar
                         .onChange(of: addText) { _, newValue in
                             updateSuggestions(for: newValue)
@@ -159,8 +162,9 @@ struct WordsView: View {
                 }
             }
             .animation(.spring(response: 0.42, dampingFraction: 0.85), value: toastMessage)
-            .navigationTitle(String(localized: "tab.words", locale: locale))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -196,6 +200,24 @@ struct WordsView: View {
                 DefinitionEditSheet(word: word)
             }
         }
+    }
+
+    // MARK: - Pinned title
+
+    /// Large body-content title that replaces `.navigationTitle`. The nav
+    /// bar's auto-collapse behaviour was firing whenever the autocomplete
+    /// dropdown's ScrollView gesture bubbled up to the saved-words List;
+    /// rendering the title in the layout body keeps it visible regardless
+    /// of scroll state. The nav bar itself stays around (in inline mode
+    /// with an empty title) so the gear + sort toolbar items still render.
+    private var pinnedTitle: some View {
+        Text(String(localized: "tab.words", locale: locale))
+            .font(.system(.largeTitle, weight: .bold))
+            .foregroundStyle(Theme.ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 4)
+            .padding(.bottom, 2)
     }
 
     // MARK: - Type-to-add bar

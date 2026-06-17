@@ -41,12 +41,11 @@ struct FlowLayout: Layout {
 /// regenerate-from-saved-story flow with seeded state.
 struct StoryView: View {
     @Binding var showSettings: Bool
-    /// Read from `\.locale` so the nav title resolves against the user's
-    /// choice without waiting for a relaunch. `WordstoryApp` installs the
-    /// env locale from the `uiLanguage` AppStorage; LocalizedStringKey-based
-    /// Text views pick it up directly, but `navigationTitle` on iOS 17/18
-    /// bridges through UIKit and intermittently keeps the bundle-locale
-    /// title. Resolving the title via the explicit Locale dodges that.
+    /// Resolve the title against the env locale so it refreshes when the
+    /// user switches language in Settings. The title now renders in the
+    /// view body (see `pinnedTitle`) rather than `.navigationTitle` so it
+    /// stays put when the composer form scrolls — matches `WordsView` /
+    /// `SavedStoriesView`.
     @Environment(\.locale) private var locale
 
     @State private var selectedIDs: Set<UUID> = []
@@ -56,14 +55,21 @@ struct StoryView: View {
 
     var body: some View {
         NavigationStack {
-            StoryComposerForm(
-                selectedIDs: $selectedIDs,
-                style: $style,
-                customPrompt: $customPrompt,
-                length: $length
-            )
-            .navigationTitle(String(localized: "tab.story", locale: locale))
-            .navigationBarTitleDisplayMode(.large)
+            ZStack(alignment: .top) {
+                Theme.background.ignoresSafeArea()
+                VStack(spacing: 0) {
+                    pinnedTitle
+                    StoryComposerForm(
+                        selectedIDs: $selectedIDs,
+                        style: $style,
+                        customPrompt: $customPrompt,
+                        length: $length
+                    )
+                }
+            }
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -75,6 +81,16 @@ struct StoryView: View {
                 }
             }
         }
+    }
+
+    private var pinnedTitle: some View {
+        Text(String(localized: "tab.story", locale: locale))
+            .font(.system(.largeTitle, weight: .bold))
+            .foregroundStyle(Theme.ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 4)
+            .padding(.bottom, 2)
     }
 }
 

@@ -30,61 +30,65 @@ struct SavedStoriesView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .top) {
                 Theme.background.ignoresSafeArea()
-                if stories.isEmpty {
-                    emptyState
-                } else {
-                    List {
-                        ForEach(sortedStories) { story in
-                            NavigationLink {
-                                SavedStoryDetail(story: story)
-                            } label: {
-                                row(for: story)
-                            }
-                            .listRowBackground(Theme.paper)
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    delete(story)
+                VStack(spacing: 0) {
+                    pinnedTitle
+                    if stories.isEmpty {
+                        emptyState
+                    } else {
+                        List {
+                            ForEach(sortedStories) { story in
+                                NavigationLink {
+                                    SavedStoryDetail(story: story)
                                 } label: {
-                                    Label("action.delete", systemImage: "trash")
+                                    row(for: story)
                                 }
-                            }
-                            // Leading swipe → rename. Gated on completed
-                            // stories: generating + failed rows don't have
-                            // any content to title yet, and the same
-                            // gating is mirrored on the detail-view pencil.
-                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                if !story.isGenerating && !story.generationFailed {
-                                    Button {
-                                        editingStory = story
+                                .listRowBackground(Theme.paper)
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        delete(story)
                                     } label: {
-                                        Label("saved.swipe.edit", systemImage: "pencil")
+                                        Label("action.delete", systemImage: "trash")
                                     }
-                                    .tint(.blue)
                                 }
-                            }
-                            // Long-press → push the regenerate composer
-                            // (pre-filled with this story's vocab + style).
-                            // Gated to completed stories: an in-flight or
-                            // failed source has no useful provenance.
-                            .contextMenu {
-                                if !story.isGenerating && !story.generationFailed {
-                                    Button {
-                                        regenerateSource = story
-                                    } label: {
-                                        Label("saved.regenerate", systemImage: "arrow.triangle.2.circlepath")
+                                // Leading swipe → rename. Gated on completed
+                                // stories: generating + failed rows don't have
+                                // any content to title yet, and the same
+                                // gating is mirrored on the detail-view pencil.
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                    if !story.isGenerating && !story.generationFailed {
+                                        Button {
+                                            editingStory = story
+                                        } label: {
+                                            Label("saved.swipe.edit", systemImage: "pencil")
+                                        }
+                                        .tint(.blue)
+                                    }
+                                }
+                                // Long-press → push the regenerate composer
+                                // (pre-filled with this story's vocab + style).
+                                // Gated to completed stories: an in-flight or
+                                // failed source has no useful provenance.
+                                .contextMenu {
+                                    if !story.isGenerating && !story.generationFailed {
+                                        Button {
+                                            regenerateSource = story
+                                        } label: {
+                                            Label("saved.regenerate", systemImage: "arrow.triangle.2.circlepath")
+                                        }
                                     }
                                 }
                             }
                         }
+                        .scrollContentBackground(.hidden)
+                        .listStyle(.insetGrouped)
                     }
-                    .scrollContentBackground(.hidden)
-                    .listStyle(.insetGrouped)
                 }
             }
-            .navigationTitle(String(localized: "saved.tab", locale: locale))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(item: $regenerateSource) { story in
                 RegenerateStoryView(source: story)
             }
@@ -102,6 +106,18 @@ struct SavedStoriesView: View {
                 }
             }
         }
+    }
+
+    /// Large body-content title that replaces `.navigationTitle` so the
+    /// header stays put when the list is scrolled. Mirrors `WordsView`.
+    private var pinnedTitle: some View {
+        Text(String(localized: "saved.tab", locale: locale))
+            .font(.system(.largeTitle, weight: .bold))
+            .foregroundStyle(Theme.ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 4)
+            .padding(.bottom, 2)
     }
 
     @ViewBuilder

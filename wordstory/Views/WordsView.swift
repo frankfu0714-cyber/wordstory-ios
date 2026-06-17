@@ -81,60 +81,67 @@ struct WordsView: View {
                         .onChange(of: addText) { _, newValue in
                             updateSuggestions(for: newValue)
                         }
-                    if !suggestions.isEmpty && !addText.isEmpty {
-                        suggestionsList
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-                    if allWords.isEmpty {
-                        emptyState
-                    } else {
-                        ScrollViewReader { proxy in
-                            List {
-                                ForEach(sortedWords) { word in
-                                    WordRow(
-                                        word: word,
-                                        isFlashed: flashedWordID == word.id,
-                                        onToggleLearned: { toggleLearned(word) },
-                                        onRetryFetch: {
-                                            Task { @MainActor in await refetch(word) }
-                                        },
-                                        onEditDefinition: {
-                                            editingDefinitionWord = word
-                                        }
-                                    )
-                                        .id(word.id)
-                                        .listRowBackground(Theme.paper)
-                                        .swipeActions(edge: .trailing) {
-                                            Button(role: .destructive) {
-                                                delete(word)
-                                            } label: {
-                                                Label("action.delete", systemImage: "trash")
+                    // ZStack lets the autocomplete dropdown overlay the saved
+                    // word list rather than compete with it for VStack flex
+                    // space — previously the List would claim most of the
+                    // remaining height and the dropdown was getting compressed
+                    // to ~4 rows even with a 540pt maxHeight cap.
+                    ZStack(alignment: .top) {
+                        if allWords.isEmpty {
+                            emptyState
+                        } else {
+                            ScrollViewReader { proxy in
+                                List {
+                                    ForEach(sortedWords) { word in
+                                        WordRow(
+                                            word: word,
+                                            isFlashed: flashedWordID == word.id,
+                                            onToggleLearned: { toggleLearned(word) },
+                                            onRetryFetch: {
+                                                Task { @MainActor in await refetch(word) }
+                                            },
+                                            onEditDefinition: {
+                                                editingDefinitionWord = word
                                             }
-                                        }
-                                        .swipeActions(edge: .leading) {
-                                            Button {
-                                                toggleLearned(word)
-                                            } label: {
-                                                Label(
-                                                    word.learned ? "action.mark_unlearned" : "action.mark_learned",
-                                                    systemImage: word.learned ? "circle" : "checkmark.circle"
-                                                )
+                                        )
+                                            .id(word.id)
+                                            .listRowBackground(Theme.paper)
+                                            .swipeActions(edge: .trailing) {
+                                                Button(role: .destructive) {
+                                                    delete(word)
+                                                } label: {
+                                                    Label("action.delete", systemImage: "trash")
+                                                }
                                             }
-                                            .tint(Color.accentColor)
-                                        }
-                                }
-                            }
-                            .scrollContentBackground(.hidden)
-                            .listStyle(.insetGrouped)
-                            .refreshable { await refetchAllPending() }
-                            .onChange(of: pendingScrollID) { _, newValue in
-                                if let newValue {
-                                    withAnimation(.easeInOut(duration: 0.35)) {
-                                        proxy.scrollTo(newValue, anchor: .center)
+                                            .swipeActions(edge: .leading) {
+                                                Button {
+                                                    toggleLearned(word)
+                                                } label: {
+                                                    Label(
+                                                        word.learned ? "action.mark_unlearned" : "action.mark_learned",
+                                                        systemImage: word.learned ? "circle" : "checkmark.circle"
+                                                    )
+                                                }
+                                                .tint(Color.accentColor)
+                                            }
                                     }
-                                    pendingScrollID = nil
+                                }
+                                .scrollContentBackground(.hidden)
+                                .listStyle(.insetGrouped)
+                                .refreshable { await refetchAllPending() }
+                                .onChange(of: pendingScrollID) { _, newValue in
+                                    if let newValue {
+                                        withAnimation(.easeInOut(duration: 0.35)) {
+                                            proxy.scrollTo(newValue, anchor: .center)
+                                        }
+                                        pendingScrollID = nil
+                                    }
                                 }
                             }
+                        }
+                        if !suggestions.isEmpty && !addText.isEmpty {
+                            suggestionsList
+                                .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                     }
                 }
@@ -241,51 +248,51 @@ struct WordsView: View {
         .padding(.bottom, 6)
     }
 
-    /// Autocomplete dropdown rendered directly under `typeToAddBar`.
-    ///
-    /// Sizing: plain `VStack` (not `ScrollView + LazyVStack`) so the dropdown's
-    /// intrinsic height tracks the content — small result counts render as
-    /// a small box, not a tall mostly-empty rectangle, and `layoutPriority(2)`
-    /// can actually win against the List's flex claim because the dropdown's
-    /// ideal is now a concrete number rather than "flex." The previous
-    /// `ScrollView`-based design lost the flex-vs-flex layout fight and was
-    /// clamped to ~5 visible rows even with the cap at 540pt.
-    ///
-    /// The `frame(maxHeight: 540)` safety net handles the 20-result max from
-    /// `searchPrefix` (~600pt of content): the rounded `clipShape` below
-    /// clips the bottom 1-2 rows in that worst case. Users with a wide prefix
-    /// can refine; common prefixes return < 18 matches and fit comfortably.
+    /// Autocomplete dropdown — overlays the saved word list when active.
+    /// Height is computed deterministically from row count rather than relying
+    /// on a `maxHeight` cap inside a flex container: a 15pt serif row with
+    /// 6+6pt vertical padding + 1pt divider measures ~31pt, so we lock the
+    /// frame to exactly `rows × 31` up to ~17 visible rows (~527pt). Any
+    /// excess scrolls. The previous `ScrollView + LazyVStack + maxHeight: 540`
+    /// reported a flex ideal of zero, so even with `layoutPriority(2)` the
+    /// surrounding VStack handed almost all the space to the saved-list and
+    /// the dropdown rendered with only ~4 rows visible.
     private var suggestionsList: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(suggestions.enumerated()), id: \.element) { index, word in
-                Button {
-                    selectSuggestion(word)
-                } label: {
-                    HStack {
-                        Text(word)
-                            .font(Theme.serif(15))
-                            .foregroundStyle(Theme.ink)
-                            .lineLimit(1)
-                        Spacer()
+        let rowHeight: CGFloat = 31
+        let visibleRows = min(suggestions.count, 17)
+        let height = CGFloat(visibleRows) * rowHeight
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(suggestions.enumerated()), id: \.element) { index, word in
+                    Button {
+                        selectSuggestion(word)
+                    } label: {
+                        HStack {
+                            Text(word)
+                                .font(Theme.serif(15))
+                                .foregroundStyle(Theme.ink)
+                                .lineLimit(1)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                if index < suggestions.count - 1 {
-                    Divider().opacity(0.45)
+                    .buttonStyle(.plain)
+                    if index < suggestions.count - 1 {
+                        Divider().opacity(0.45)
+                    }
                 }
             }
         }
-        .frame(maxHeight: 540, alignment: .top)
-        .layoutPriority(2)
+        .frame(height: height)
         .background(Theme.paper)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(Theme.rule, lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
         .padding(.horizontal, 20)
         .padding(.bottom, 8)
     }
@@ -425,9 +432,9 @@ struct WordsView: View {
             let results: [String]
             switch dir {
             case .enToZh:
-                results = await DictionaryService.shared.searchPrefix(prefix, limit: 20)
+                results = await DictionaryService.shared.searchPrefix(prefix, limit: 30)
             case .zhToEn:
-                results = await DictionaryService.shared.searchPrefixZh(prefix, limit: 20)
+                results = await DictionaryService.shared.searchPrefixZh(prefix, limit: 30)
             }
             guard !Task.isCancelled else { return }
             withAnimation(.easeInOut(duration: 0.18)) {

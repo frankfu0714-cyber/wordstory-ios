@@ -6,9 +6,6 @@ struct SavedStoriesView: View {
     @Query(sort: \SavedStory.dateCreated, order: .reverse) private var stories: [SavedStory]
     @Environment(\.modelContext) private var modelContext
     @Query private var allWords: [Word]
-    /// See StoryView for rationale — explicit-locale resolve to keep the
-    /// nav title in sync with same-session Settings switches.
-    @Environment(\.locale) private var locale
 
     /// Drives the title-edit sheet via `.sheet(item:)`. nil = sheet closed.
     @State private var editingStory: SavedStory?
@@ -111,7 +108,7 @@ struct SavedStoriesView: View {
     /// Large body-content title that replaces `.navigationTitle` so the
     /// header stays put when the list is scrolled. Mirrors `WordsView`.
     private var pinnedTitle: some View {
-        Text(String(localized: "saved.tab", locale: locale))
+        Text("saved.tab")
             .font(.system(.largeTitle, weight: .bold))
             .foregroundStyle(Theme.ink)
             .frame(maxWidth: .infinity, alignment: .leading)

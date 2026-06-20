@@ -9,6 +9,12 @@ struct WordstoryApp: App {
     /// gives us same-session updates for the strings that respect it.
     @AppStorage("uiLanguage") private var uiLanguage: String = ""
 
+    /// Bumped when iOS posts `NSLocale.currentLocaleDidChangeNotification`. Used as
+    /// `.id()` on the root view so the tree is rebuilt and every `LocalizedStringKey`
+    /// re-resolves against the new bundle. Without this, pinned titles stay frozen
+    /// to whatever language was active at view-tree-creation time.
+    @State private var localeRefreshKey = UUID()
+
     /// Pin nav-title text to brand ink. Without this, large titles inherit
     /// `.label`, which becomes near-white when the device is in dark mode
     /// — invisible against our cream `Theme.background`. Mirrors the values
@@ -27,6 +33,10 @@ struct WordstoryApp: App {
                 #if DEBUG
                 .modelContext_seedDemoIfNeeded()
                 #endif
+                .id(localeRefreshKey)
+                .onReceive(NotificationCenter.default.publisher(for: NSLocale.currentLocaleDidChangeNotification)) { _ in
+                    localeRefreshKey = UUID()
+                }
         }
         .modelContainer(for: [Word.self, SavedStory.self])
     }

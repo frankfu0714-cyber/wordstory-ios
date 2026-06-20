@@ -18,13 +18,6 @@ struct WordsView: View {
     @Binding var showSettings: Bool
     @Query private var allWords: [Word]
     @Environment(\.modelContext) private var modelContext
-    /// Resolve the title against the explicit env locale so it refreshes
-    /// when the user switches language in Settings without a relaunch.
-    /// The title now lives in the view body (see `pinnedTitle`) rather
-    /// than in `.navigationTitle`, because the large-title display mode
-    /// auto-collapses when scroll gestures inside the autocomplete
-    /// dropdown bubble up to the saved-words List.
-    @Environment(\.locale) private var locale
 
     @State private var sortOrder: WordSortOrder = .recent
 
@@ -211,7 +204,7 @@ struct WordsView: View {
     /// of scroll state. The nav bar itself stays around (in inline mode
     /// with an empty title) so the gear + sort toolbar items still render.
     private var pinnedTitle: some View {
-        Text(String(localized: "tab.words", locale: locale))
+        Text("tab.words")
             .font(.system(.largeTitle, weight: .bold))
             .foregroundStyle(Theme.ink)
             .frame(maxWidth: .infinity, alignment: .leading)

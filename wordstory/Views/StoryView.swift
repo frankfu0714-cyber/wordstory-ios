@@ -41,12 +41,6 @@ struct FlowLayout: Layout {
 /// regenerate-from-saved-story flow with seeded state.
 struct StoryView: View {
     @Binding var showSettings: Bool
-    /// Resolve the title against the env locale so it refreshes when the
-    /// user switches language in Settings. The title now renders in the
-    /// view body (see `pinnedTitle`) rather than `.navigationTitle` so it
-    /// stays put when the composer form scrolls — matches `WordsView` /
-    /// `SavedStoriesView`.
-    @Environment(\.locale) private var locale
 
     @State private var selectedIDs: Set<UUID> = []
     @State private var style: StoryStyle = .shortStory
@@ -84,7 +78,7 @@ struct StoryView: View {
     }
 
     private var pinnedTitle: some View {
-        Text(String(localized: "tab.story", locale: locale))
+        Text("tab.story")
             .font(.system(.largeTitle, weight: .bold))
             .foregroundStyle(Theme.ink)
             .frame(maxWidth: .infinity, alignment: .leading)

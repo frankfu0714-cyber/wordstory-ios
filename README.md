@@ -62,7 +62,7 @@ You may need to bump `CURRENT_PROJECT_VERSION` in `project.yml` between uploads 
 
 ## Bundle / display info
 - **Bundle ID:** `com.frankfu.wordstory`
-- **Display name:** `wordstory` (the Chinese display name `詞語故事` is not set yet — confirm with Frank before launch and add a `INFOPLIST_KEY_CFBundleDisplayName` per locale)
+- **Display name:** per-locale via `InfoPlist.strings` — `en.lproj` → `Wordstory`, `zh-Hant.lproj` → `故事辭典-英漢詞典`. Fallback (`INFOPLIST_KEY_CFBundleDisplayName` in `project.yml`) is `Wordstory`.
 - **Deployment target:** iOS 17.0
 - **Devices:** iPhone (portrait). iPad is a stretch goal for M2.
 

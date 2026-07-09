@@ -39,7 +39,7 @@ targets:
         # Fallback display name (matches en.lproj/InfoPlist.strings).
         # Per-locale CFBundleDisplayName overrides take precedence:
         #   en.lproj      → "Wordstory"
-        #   zh-Hant.lproj → "故事辭典"
+        #   zh-Hant.lproj → "故事辭典-英漢詞典"
         INFOPLIST_KEY_CFBundleDisplayName: Wordstory
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         INFOPLIST_KEY_CFBundleLocalizations: "en zh-Hant"

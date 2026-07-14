@@ -19,6 +19,10 @@ struct APIService {
         case server(status: Int, message: String?)
         case decoding
         case transport(underlying: Error)
+        /// Response decoded cleanly but failed structural validation
+        /// (missing/empty sentences[], empty story_en/story_zh, empty pair).
+        /// Carries a machine-readable reason for the retry logger.
+        case malformedGeneration(reason: String)
 
         var errorDescription: String? {
             switch self {
@@ -30,6 +34,8 @@ struct APIService {
                 return String(localized: "error.decoding")
             case .transport(let underlying):
                 return underlying.localizedDescription
+            case .malformedGeneration:
+                return String(localized: "error.malformed_generation")
             }
         }
     }
@@ -115,6 +121,16 @@ struct APIService {
     }
 
     /// Calls `/api/generate` with a list of words and a style.
+    ///
+    /// Retries once on transport failure OR malformed response: the API
+    /// occasionally returns a truncated body where `sentences[]` is nil or
+    /// pairs have empty sides (Gemini hitting max_tokens mid-JSON is the
+    /// usual culprit). Persisting that as a "success" produced the
+    /// long-Chinese-block regression Frank saw, so the client now demands
+    /// a well-formed shape and throws `malformedGeneration` when both
+    /// attempts fail — the `runGeneration` catch marks the row as
+    /// generationFailed with a clear reason instead of silently storing
+    /// bad data.
     static func generateStory(
         words: [String],
         style: StoryStyle,
@@ -132,7 +148,58 @@ struct APIService {
             // server versions that don't know about length yet.
             length: length == .standard ? nil : length.rawValue
         )
-        return try await post(path: "/api/generate", body: payload)
+        let maxAttempts = 2
+        var lastError: Error?
+        for attempt in 1...maxAttempts {
+            do {
+                let response: GenerateResponse = try await post(path: "/api/generate", body: payload)
+                if let reason = validationFailureReason(response) {
+                    print("[APIService] /api/generate attempt \(attempt)/\(maxAttempts) malformed: \(reason)")
+                    lastError = APIError.malformedGeneration(reason: reason)
+                    continue
+                }
+                if attempt > 1 {
+                    print("[APIService] /api/generate recovered on attempt \(attempt)")
+                }
+                return response
+            } catch let error as APIError {
+                // 4xx errors won't be fixed by retrying — surface them
+                // immediately. Everything else (transport, decoding, 5xx,
+                // invalidResponse) gets one more shot.
+                if case .server(let status, _) = error, (400..<500).contains(status) {
+                    throw error
+                }
+                lastError = error
+                print("[APIService] /api/generate attempt \(attempt)/\(maxAttempts) failed: \(error.localizedDescription)")
+            } catch {
+                lastError = error
+                print("[APIService] /api/generate attempt \(attempt)/\(maxAttempts) failed: \(error.localizedDescription)")
+            }
+        }
+        throw lastError ?? APIError.invalidResponse
+    }
+
+    /// Returns nil when the response is well-formed. Otherwise returns a
+    /// short human-readable reason string suitable for logs + the failed-row
+    /// UI. Rules mirror what the render layer needs to produce the
+    /// per-sentence interleaved layout without falling back to the flat
+    /// blocks.
+    private static func validationFailureReason(_ response: GenerateResponse) -> String? {
+        let enFull = response.story_en.trimmingCharacters(in: .whitespacesAndNewlines)
+        let zhFull = response.story_zh.trimmingCharacters(in: .whitespacesAndNewlines)
+        if enFull.isEmpty { return "empty story_en" }
+        if zhFull.isEmpty { return "empty story_zh" }
+        guard let sentences = response.sentences else { return "missing sentences[]" }
+        if sentences.isEmpty { return "empty sentences[]" }
+        for (i, pair) in sentences.enumerated() {
+            if pair.en.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return "empty en at sentences[\(i)]"
+            }
+            if pair.zh.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return "empty zh at sentences[\(i)]"
+            }
+        }
+        return nil
     }
 
     // MARK: - Transport

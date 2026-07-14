@@ -10,7 +10,10 @@ struct SavedStoryDetail: View {
 
     @Environment(\.modelContext) private var modelContext
     @Query private var allWords: [Word]
-    @State private var showChinese: Bool = false
+    /// Default on so the Chinese line pairs under each English sentence
+    /// immediately — long paragraphs are unreadable when the translation
+    /// is buried behind a toggle. Users who want English-only can hide.
+    @State private var showChinese: Bool = true
     @State private var tappedWord: Word?
     @State private var isEditingTitle: Bool = false
 
@@ -147,24 +150,7 @@ struct SavedStoryDetail: View {
                 Spacer()
             }
 
-            if !story.sentences.isEmpty {
-                interleaved(story.sentences)
-            } else {
-                // Fallback render for responses where the sentences[] array
-                // was lost to truncation.
-                Text(makeAttributedStory(text: story.storyEnFull, words: vocab))
-                    .font(Theme.serif(18))
-                    .lineSpacing(8)
-                    .foregroundStyle(Theme.ink)
-                    .textSelection(.enabled)
-                if showChinese, !story.storyZhFull.isEmpty {
-                    Text(makeChineseAttributed(text: story.storyZhFull, words: vocab, spans: nil))
-                        .font(.system(size: 14))
-                        .lineSpacing(5)
-                        .foregroundStyle(Theme.inkSoft)
-                        .textSelection(.enabled)
-                }
-            }
+            interleaved(effectiveSentences)
         }
     }
 
@@ -279,21 +265,47 @@ struct SavedStoryDetail: View {
         .accessibilityHint(Text("saved.vocabulary.tap_hint"))
     }
 
+    /// The sentence pairs to render — either the server-emitted `sentences[]`
+    /// (populated for typical responses, and carries `vocab_spans` for
+    /// Chinese-side highlighting) OR, when that array is empty because the
+    /// response was truncated / from an older server, a client-side pairing
+    /// built by splitting `storyEnFull` and `storyZhFull` with ICU's
+    /// Unicode sentence tokenizer. The client-split path has no vocab_spans,
+    /// so Chinese highlighting falls back to dictionary-derived candidates
+    /// in `makeChineseAttributed`.
+    private var effectiveSentences: [APIService.GenerateResponse.SentencePair] {
+        if !story.sentences.isEmpty { return story.sentences }
+        let en = story.storyEnFull.splitIntoSentences()
+        let zh = story.storyZhFull.splitIntoSentences()
+        let count = max(en.count, zh.count)
+        guard count > 0 else { return [] }
+        return (0..<count).map { i in
+            APIService.GenerateResponse.SentencePair(
+                en: i < en.count ? en[i] : "",
+                zh: i < zh.count ? zh[i] : "",
+                vocab_spans: nil
+            )
+        }
+    }
+
     private func interleaved(_ sentences: [APIService.GenerateResponse.SentencePair]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(sentences.enumerated()), id: \.offset) { _, pair in
                 VStack(alignment: .leading, spacing: showChinese ? 3 : 0) {
-                    Text(makeAttributedStory(text: pair.en, words: vocab))
-                        .font(Theme.serif(18))
-                        .lineSpacing(6)
-                        .foregroundStyle(Theme.ink)
-                        .textSelection(.enabled)
-                    if showChinese {
+                    if !pair.en.isEmpty {
+                        Text(makeAttributedStory(text: pair.en, words: vocab))
+                            .font(Theme.serif(18))
+                            .lineSpacing(6)
+                            .foregroundStyle(Theme.ink)
+                            .textSelection(.enabled)
+                    }
+                    if showChinese, !pair.zh.isEmpty {
                         Text(makeChineseAttributed(text: pair.zh, words: vocab, spans: pair.vocab_spans))
                             .font(.system(size: 14))
                             .lineSpacing(3)
                             .foregroundStyle(Theme.inkSoft)
                             .textSelection(.enabled)
+                            .padding(.leading, 4)
                     }
                 }
             }
@@ -306,8 +318,9 @@ struct SavedStoryDetail: View {
     /// phrases. Splits the phrase on whitespace and allows each token a
     /// short optional suffix, so `look forward to` matches `look forward
     /// to`, `looked forward to`, `looking forward to`, `looks forward to`.
-    /// Each token gets up to 4 trailing letters — same suffix budget the
-    /// single-word matcher has always used.
+    /// Each token gets up to 4 trailing letters. Tokens ending in `-e`
+    /// (`surface`, `make`, `come`) also match the -e-dropped stem so the
+    /// `-ing` form (`surfacing`, `making`, `coming`) is caught.
     private func makeAttributedStory(text: String, words: [Word]) -> AttributedString {
         var attr = AttributedString(text)
         let nsText = text as NSString
@@ -321,8 +334,17 @@ struct SavedStoryDetail: View {
                 pattern = NSRegularExpression.escapedPattern(for: trimmed)
             } else {
                 let tokens = trimmed.split(separator: " ", omittingEmptySubsequences: true)
-                let parts = tokens.map { token in
-                    NSRegularExpression.escapedPattern(for: String(token)) + "(?:[a-zA-Z]{0,4})?"
+                let parts = tokens.map { token -> String in
+                    let t = String(token)
+                    let base = NSRegularExpression.escapedPattern(for: t)
+                    // For tokens > 2 chars ending in 'e', also try the
+                    // e-dropped stem so `surface` → `surfacing`, `make` →
+                    // `making`, `come` → `coming` are highlighted too.
+                    if t.count > 2, t.hasSuffix("e") {
+                        let stem = NSRegularExpression.escapedPattern(for: String(t.dropLast()))
+                        return "(?:\(base)|\(stem))(?:[a-zA-Z]{0,4})?"
+                    }
+                    return base + "(?:[a-zA-Z]{0,4})?"
                 }
                 pattern = "\\b" + parts.joined(separator: "\\s+") + "\\b"
             }
@@ -408,5 +430,23 @@ struct SavedStoryDetail: View {
         s.unicodeScalars.contains { scalar in
             (0x3400...0x9FFF).contains(scalar.value) || (0xF900...0xFAFF).contains(scalar.value)
         }
+    }
+}
+
+private extension String {
+    /// Splits into sentences using ICU's Unicode-aware `.bySentences`
+    /// tokenizer — handles English (`.`, `!`, `?`, `…`, trailing quotes,
+    /// abbreviations like `Mr.` / `Dr.`) AND Chinese (`。！？…`) with the
+    /// same call. Used by the fallback pairing when the server didn't emit
+    /// `sentences[]`.
+    func splitIntoSentences() -> [String] {
+        var out: [String] = []
+        let full = startIndex..<endIndex
+        enumerateSubstrings(in: full, options: [.bySentences, .localized]) { sub, _, _, _ in
+            guard let sub else { return }
+            let trimmed = sub.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { out.append(trimmed) }
+        }
+        return out
     }
 }

@@ -109,14 +109,19 @@ func runGeneration(
             direction: direction,
             length: length
         )
+        // APIService.generateStory validates the response before returning:
+        // sentences[] is guaranteed non-nil and non-empty, and every pair
+        // has non-empty en/zh sides. If we reach this line, the row is
+        // safe to persist as a success — no more silent malformed writes.
+        let sentences = response.sentences ?? []
         print(String(format: "[StoryView] generated: sentences=%d, en=%d chars, zh=%d chars",
-                     response.sentences?.count ?? 0,
+                     sentences.count,
                      response.story_en.count,
                      response.story_zh.count))
         guard let saved = try? context.fetch(fd).first else { return }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        let json = (try? encoder.encode(response.sentences ?? []))
+        let json = (try? encoder.encode(sentences))
             .flatMap { String(data: $0, encoding: .utf8) } ?? ""
         let preview = String(response.story_en.prefix(40))
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -129,6 +134,7 @@ func runGeneration(
         saved.generationFailureReason = nil
         try? context.save()
     } catch {
+        print("[StoryView] generation failed after retries: \(error.localizedDescription)")
         guard let saved = try? context.fetch(fd).first else { return }
         saved.isGenerating = false
         saved.generationFailed = true

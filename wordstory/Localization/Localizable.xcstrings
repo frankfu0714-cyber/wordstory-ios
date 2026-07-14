@@ -284,6 +284,22 @@
         }
       }
     },
+    "error.malformed_generation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The story came back incomplete. Please try again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生成的故事不完整，請再試一次。"
+          }
+        }
+      }
+    },
     "error.invalid_response" : {
       "localizations" : {
         "en" : {
